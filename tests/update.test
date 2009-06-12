@@ -1,0 +1,41 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * Test the xgit-update hook.
+ *
+ * Copyright 2009 by Daniel Hackney ("chrono325", http://drupal.org/user/384635)
+ */
+
+require_once(drupal_get_path('module', 'versioncontrol_git') .'/tests/git_test_helper.inc');
+
+class GitUpdateHookTestCase extends GitTestHelper {
+
+  public static function getInfo() {
+    return array(
+      'name' => t('versioncontrol_git update Hook'),
+      'description' => t('Test the functionality of the Git update hook.'),
+      'group' => t('Version Control - Git'),
+    );
+  }
+
+  /**
+   * Test the printing of usage information when incorrect number of arguments
+   * is given.
+   */
+  public function testInvalidArgHelp() {
+    $this->initRepo();
+    $this->initHook('update');
+
+    $result = shell_exec($this->hooks['update']['file'] .' 2>&1');
+    $usage_text = t('Usage: php !cli <config file> <ref> <oldrev> <newrev>',
+                  array('!cli' => $this->hooks['update']['dst']));
+
+    $this->assertTrue(
+      is_int(strpos($result, $usage_text)),
+      t('Print help text when incorrect number of arguments is given.'),
+      t('Shell Interaction')
+    );
+  }
+}
