@@ -54,12 +54,13 @@ EOF;
 // ------------------------------------------------------------
 
 // Error constants.
-define('VERSIONCONTROL_GIT_ERROR_WRONG_ARGC', 1);
-define('VERSIONCONTROL_GIT_ERROR_NO_CONFIG', 2);
-define('VERSIONCONTROL_GIT_ERROR_NO_ACCOUNT', 3);
-define('VERSIONCONTROL_GIT_ERROR_NO_GIT_DIR', 4);
-define('VERSIONCONTROL_GIT_ERROR_INVALID_REF', 5);
+define('VERSIONCONTROL_GIT_ERROR_WRONG_ARGC',      1);
+define('VERSIONCONTROL_GIT_ERROR_NO_CONFIG',       2);
+define('VERSIONCONTROL_GIT_ERROR_NO_ACCOUNT',      3);
+define('VERSIONCONTROL_GIT_ERROR_NO_GIT_DIR',      4);
+define('VERSIONCONTROL_GIT_ERROR_INVALID_REF',     5);
 define('VERSIONCONTROL_GIT_ERROR_UNEXPECTED_TYPE', 6);
+define('VERSIONCONTROL_GIT_ERROR_NO_ACCESS',       7);
 
 // An empty sha1 sum, represents the parent of the initial commit or the
 // deletion of a reference.
@@ -88,6 +89,10 @@ function xgit_bootstrap($xgit) {
 
   require_once './includes/bootstrap.inc';
   drupal_bootstrap(DRUPAL_BOOTSTRAP_FULL);
+
+  require_once(drupal_get_path('module', 'versioncontrol_git') .'/versioncontrol_git.module');
+  require_once(drupal_get_path('module', 'versioncontrol_git') .'/versioncontrol_git.log.inc');
+  $xsvn['repo'] = versioncontrol_get_repository($xsvn['repo_id']);
 }
 
 /**
@@ -126,14 +131,14 @@ function xgit_get_commit_author($commit) {
  * The possible statuses are:
  *
  *   (A) Added
- *   (C) Copied
+ *   (C###) Copied (### percent similar)
  *   (D) Deleted
  *   (M) Modified
- *   (R) Renamed
+ *   (R###) Renamed (### percent similar)
  *   (T) Have their type (i.e. regular file, symlink, submodule, ...) changed
- *   (U) Are Unmerged
- *   (X) Are Unknown
- *   (B) Have had their pairing Broken
+ *   (U) Are unmerged
+ *   (X) Are unknown
+ *   (B) Have had their pairing broken
  *
  * Taken from the git-log(1) manpage.
  *
@@ -141,11 +146,20 @@ function xgit_get_commit_author($commit) {
  *   The commit ID for which to find the modified files.
  *
  * @return
- *   An array of files and directories modified by the commit or
- *   transaction. The keys are the paths of the file and the value is the status
- *   of the item, as described above.
+ *    An array of files and directories modified by the commit or
+ *    transaction. The keys are the paths of the file and the value is an array
+ *    with the following structure:
+ *
+ *      - 'status' - Always present. Is one of the statuses described
+ *                   above. Note that the 'copied' and 'renamed' statuses have
+ *                   their numbers stripped.
+ *
+ *      - 'old_path' - Only present for 'copied' and 'renamed' statuses. The
+ *                     name of the path from which the current path was copied
+ *                     or renamed, respectively.
+ *
  */
-function xsvn_get_commit_files($commit) {
+function xgit_get_commit_files($commit) {
   $lines = _xgit_load_commit($commit);
 
   $items = array();
@@ -156,9 +170,20 @@ function xsvn_get_commit_files($commit) {
     if (empty($line)) {
       break;
     }
-    // Limit to 2 elements to avoid cutting up paths with spaces.
-    list($status, $path) = split('/\s+/', $line, 2);
-    $items[$path] = $status;
+
+    // Move and copy operations operate on two files.
+    list($status, $old_path, $new_path) = split("/\t/", $line);
+
+    if (isset($new_path)) {
+      // Only take the first character, as we can't do anything with the
+      // similarity match.
+      $status = substr($status, 1, 1);
+      $items[$new_path] = array(
+        'status' => $status,
+        'old_path' => $old_path,
+      );
+    }
+    $items[$old_path] = array('status' => $status);
   } while($line = prev($lines));
 
   return array_reverse($items, TRUE);
@@ -426,4 +451,52 @@ function xgit_operation_type($ref) {
        throw new Exception("Unexpected operation type '$ref' received.");
        break;
   }
+}
+
+/**
+ * Fill an item array suitable for versioncontrol_has_write_access from an
+ * item's path and status.
+ *
+ * @param $path
+ *   The path of the item.
+ *
+ * @param $properties
+ *   An array of properties, in the same format as the return value from
+ *   xgit_get_commit_files().
+ */
+function xgit_get_operation_item($path, $properties) {
+  $item['path'] = $path;
+  $item['type'] = VERSIONCONTROL_ITEM_FILE;
+
+  switch ($properties['status']) {
+    case 'A': // Added
+      $item['action'] = VERSIONCONTROL_ACTION_ADDED;
+      break;
+    case 'C': // Copied
+      $item['action'] = VERSIONCONTROL_ACTION_COPIED;
+      break;
+    case 'D': // Deleted
+      $item['action'] = VERSIONCONTROL_ACTION_DELETED;
+      $item['type'] VERSIONCONTROL_ITEM_FILE_DELETED;
+      break;
+    case 'M': // Modified
+      $item['action'] = VERSIONCONTROL_ACTION_MODIFIED;
+      break;
+    case 'R': // Renamed
+      $item['action'] = VERSIONCONTROL_ACTION_MOVED;
+      break;
+    case 'T': // Have their type (i.e. regular file, symlink, submodule, ...) changed
+      $item['action'] = VERSIONCONTROL_ACTION_OTHER;
+      break;
+    case 'U': // Are unmerged
+      $item['action'] = VERSIONCONTROL_ACTION_OTHER;
+      break;
+    case 'X': // Are unknown
+      $item['action'] = VERSIONCONTROL_ACTION_OTHER;
+      break;
+    case 'B': // Have had their pairing broken
+      $item['action'] = VERSIONCONTROL_ACTION_OTHER;
+      break;
+  }
+  return $item;
 }

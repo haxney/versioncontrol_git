@@ -107,8 +107,8 @@ function xgit_init($argc, $argv) {
     $operation['labels'][] = xgit_label_for($ref, $old_obj, $new_obj);
 
     // Set the $operation_items array from the item path and status.
-    foreach ($item_paths as $path => $status) {
-      $item = xgit_get_operation_item($path, $status);
+    foreach ($item_paths as $path => $properties) {
+      $item = xgit_get_operation_item($path, $properties);
       $operation_items[$path] = $item;
     }
     $access = versioncontrol_has_write_access($operation, $operation_items);
@@ -116,7 +116,7 @@ function xgit_init($argc, $argv) {
     // Fail and print out error messages if commit access has been denied.
     if (!$access) {
       fwrite(STDERR, implode("\n\n", versioncontrol_get_access_errors()) ."\n\n");
-      exit(6);
+      exit(VERSIONCONTROL_GIT_ERROR_NO_ACCESS);
     }
   }
 }
