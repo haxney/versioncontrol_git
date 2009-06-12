@@ -106,25 +106,16 @@ function xgit_init($argc, $argv) {
       case ($type === 'commit' and $ref_type === 'heads'):
         $operation['type'] = VERSIONCONTROL_OPERATION_COMMIT;
         $operation['username'] = $username;
-        $operation['labels'][] = array(
-          // TODO: should we shorten the ref name, i.e. 'refs/heads/master' => 'master'?
-          'name' => $ref,
-          'type' => VERSIONCONTROL_OPERATION_BRANCH,
-          'action' => xgit_action($old_obj, $new_obj),
-        );
+        $operation['labels'][] = xgit_label_for($ref, $old_obj, $new_obj);
         break;
 
         // Un-annotated tag
       case ($type === 'commit' and $ref_type === 'tags'):
         $operation['type'] = VERSIONCONTROL_OPERATION_TAG;
         $operation['username'] = $username;
-        $operation['labels'][] = array(
-          // TODO: should we shorten the ref name, i.e. 'refs/heads/master' => 'master'?
-          'name' => $ref,
-          'type' => VERSIONCONTROL_OPERATION_TAG,
-          'action' => xgit_action($old_obj, $new_obj),
-        );
+        $operation['labels'][] = xgit_label_for($ref, $old_obj, $new_obj);
         break;
+
         // Annotated tag
       case ($type === 'tag'):
         if ($ref_type !== 'tags') {
@@ -133,60 +124,25 @@ function xgit_init($argc, $argv) {
         }
         $operation['type'] = VERSIONCONTROL_OPERATION_TAG;
         $operation['username'] = $username;
-        $operation['labels'][] = array(
-          'name' => $ref,
-          'type' => VERSIONCONTROL_OPERATION_TAG,
-          'action' => VERSIONCONTROL_ACTION_CREATED, // Tags can only be created
-        );
+        $operation['labels'][] = xgit_label_for($ref, $old_obj, $new_obj);
         break;
         // Delete a branch
       case ($type === 'empty' and $ref_type === 'heads'):
         $operation['type'] = VERSIONCONTROL_OPERATION_TAG;
         $operation['username'] = $username;
-        $operation['labels'][] = array(
-          'name' => $ref,
-          'type' => VERSIONCONTROL_OPERATION_TAG,
-          'action' => VERSIONCONTROL_ACTION_DELETED,
-        );
+        $operation['labels'][] = xgit_label_for($ref, $old_obj, $new_obj);
         break;
+
         // Delete a tag
       case ($type === 'empty' and $ref_type === 'tags'):
         $operation['type'] = VERSIONCONTROL_OPERATION_TAG;
         $operation['username'] = $username;
-        $operation['labels'][] = array(
-          'name' => $ref,
-          'type' => VERSIONCONTROL_OPERATION_TAG,
-          'action' => VERSIONCONTROL_ACTION_CREATED, // Tags can only be created
-        );
+        $operation['labels'][] = xgit_label_for($ref, $old_obj, $new_obj);
         break;
       case 'blob':
       case 'tree':
         break;
     }
-      $operation = array(
-      'type' => VERSIONCONTROL_OPERATION_COMMIT,
-      'repo_id' => $xgit['repo_id'],
-      'username' => $username,
-      'labels' => array(
-        'name' => $ref,
-//        'type' => VERSIONCONTROL_OPERATION_BRANCH,
-//        'action' =>
-      ),
-    );
-    }
-    $username   = xgit_get_commit_author($new_obj);
-    $item_paths = xgit_get_commit_files($new_obj);
-    // Construct a minimal commit operation array.
-    $operation = array(
-      'type' => VERSIONCONTROL_OPERATION_COMMIT,
-      'repo_id' => $xgit['repo_id'],
-      'username' => $username,
-      'labels' => array(
-        'name' => $ref,
-//        'type' => VERSIONCONTROL_OPERATION_BRANCH,
-//        'action' =>
-      ),
-    );
 
     // Set the $operation_items array from the item path and status.
     foreach ($item_paths as $path => $status) {

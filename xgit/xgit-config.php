@@ -324,18 +324,26 @@ function xgit_ref_type($ref) {
  * @param $new_obj
  *   The new value of this object.
  *
+ * @param $branch_or_tag
+ *   Treat the input as a branch or tag, meaning only CREATED, MODIFIED, or
+ *   DELETED can be returned. Defaults to FALSE.
+ *
  * @return
  *   One of the VERSIONCONTROL_ACTION_* constants.
  */
-function xgit_action($old_obj, $new_obj) {
-  if ($old_obj === VERSIONCONTROL_GIT_EMPTY_REF) {
-    return VERSIONCONTROL_ACTION_CREATED;
-  } else {
-    $merge = xgit_merge_info($new_obj);
-    if ($merge) {
+function xgit_action($old_obj, $new_obj, $branch_or_tag=FALSE) {
+  switch (TRUE) {
+    case ($old_obj === VERSIONCONTROL_GIT_EMPTY_REF):
+      return VERSIONCONTROL_ACTION_CREATED;
+      break;
+    case ($new_obj === VERSIONCONTROL_GIT_EMPTY_REF):
+      return VERSIONCONTROL_ACTION_DELETED;
+      break;
+    case (xgit_merge_info($new_obj) and !$branch_or_tag):
       return VERSIONCONTROL_ACTION_MERGED;
-    }
-    return VERSIONCONTROL_ACTION_MODIFIED;
+      break;
+    default:
+      return VERSIONCONTROL_ACTION_MODIFIED;
   }
 }
 
@@ -372,3 +380,20 @@ function xgit_merge_info($object) {
   return $xgit['objects'][$object]['merge'];
 }
 
+function xgit_label_for($ref, $old_obj, $new_obj) {
+  $label = array();
+  // TODO: should we shorten the ref name, i.e. 'refs/heads/master' => 'master'?
+  $label['name'] = $ref;
+  switch (xgit_ref_type($ref)) {
+    case 'heads':
+    case 'remotes':
+      $label['type'] = VERSIONCONTROL_OPERATION_BRANCH;
+      break;
+    case 'tags':
+      $label['type'] = VERSIONCONTROL_OPERATION_TAG;
+      break;
+  }
+  $label['action'] = xgit_action($old_obj, $new_obj, TRUE);
+
+  return $label;
+}
