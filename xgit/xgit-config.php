@@ -59,6 +59,7 @@ define('VERSIONCONTROL_GIT_ERROR_NO_CONFIG', 2);
 define('VERSIONCONTROL_GIT_ERROR_NO_ACCOUNT', 3);
 define('VERSIONCONTROL_GIT_ERROR_NO_GIT_DIR', 4);
 define('VERSIONCONTROL_GIT_ERROR_INVALID_REF', 5);
+define('VERSIONCONTROL_GIT_ERROR_UNEXPECTED_TYPE', 6);
 
 // An empty sha1 sum, represents the parent of the initial commit or the
 // deletion of a reference.
@@ -380,20 +381,49 @@ function xgit_merge_info($object) {
   return $xgit['objects'][$object]['merge'];
 }
 
+
+/**
+ * Create a label array for the reference, old, and new objects and return it.
+ *
+ * @param $ref
+ *   The reference name for which to generate the label.
+ *
+ * @param $old_obj
+ *   The old value of the reference.
+ *
+ * @param $new_obj
+ *   The new value of the reference.
+ */
 function xgit_label_for($ref, $old_obj, $new_obj) {
   $label = array();
   // TODO: should we shorten the ref name, i.e. 'refs/heads/master' => 'master'?
   $label['name'] = $ref;
-  switch (xgit_ref_type($ref)) {
-    case 'heads':
-    case 'remotes':
-      $label['type'] = VERSIONCONTROL_OPERATION_BRANCH;
-      break;
-    case 'tags':
-      $label['type'] = VERSIONCONTROL_OPERATION_TAG;
-      break;
-  }
+  $label['type'] = xgit_operation_type($ref);
   $label['action'] = xgit_action($old_obj, $new_obj, TRUE);
 
   return $label;
+}
+
+/**
+ *  Return the operation type associated with the given reference.
+ *
+ *  @param $ref
+ *    The reference of which to compute the operation type.
+ *
+ *  @return
+ *    Either VERSIONCONTROL_OPERATION_BRANCH or VERSIONCONTROL_OPERATION_TAG.
+ */
+function xgit_operation_type($ref) {
+   switch (xgit_ref_type($ref)) {
+    case 'heads':
+    case 'remotes':
+      return VERSIONCONTROL_OPERATION_BRANCH;
+      break;
+    case 'tags':
+      return VERSIONCONTROL_OPERATION_TAG;
+      break;
+     default:
+       throw new Exception("Unexpected operation type '$ref' received.");
+       break;
+  }
 }

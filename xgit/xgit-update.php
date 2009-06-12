@@ -89,60 +89,22 @@ function xgit_init($argc, $argv) {
     }
     $type = xgit_get_type($new_obj);
 
-    // Only get the username and paths if the ref can be resolved to a commit
-    // (either a commit or a tag).
+    // If the object is not a commit or a tag, then exit with an error. This
+    // hook should only be receiving commits and tags.
     $commit_types = array(
       'commit',
       'tag',
     );
-    if (in_array($type, $commit_types)) {
-      $username   = xgit_get_commit_author($new_obj);
-      $item_paths = xgit_get_commit_files($new_obj);
+    if (!in_array($type, $commit_types)) {
+      fwrite(STDERR, "Expected a commit or tag operation, received type '$type' for object '$new_obj'.");
+      exit(VERSIONCONTROL_GIT_ERROR_UNEXPECTED_TYPE);
     }
+    $username   = xgit_get_commit_author($new_obj);
+    $item_paths = xgit_get_commit_files($new_obj);
 
-    // Handle each of the different cases.
-    switch (true) {
-      // Normal commit.
-      case ($type === 'commit' and $ref_type === 'heads'):
-        $operation['type'] = VERSIONCONTROL_OPERATION_COMMIT;
-        $operation['username'] = $username;
-        $operation['labels'][] = xgit_label_for($ref, $old_obj, $new_obj);
-        break;
-
-        // Un-annotated tag
-      case ($type === 'commit' and $ref_type === 'tags'):
-        $operation['type'] = VERSIONCONTROL_OPERATION_TAG;
-        $operation['username'] = $username;
-        $operation['labels'][] = xgit_label_for($ref, $old_obj, $new_obj);
-        break;
-
-        // Annotated tag
-      case ($type === 'tag'):
-        if ($ref_type !== 'tags') {
-          fwrite(STDERR, "An annotated tag object must have a ref of the form 'refs/tags/*'\n\n");
-          exit(VERSIONCONTROL_GIT_ERROR_INVALID_REF);
-        }
-        $operation['type'] = VERSIONCONTROL_OPERATION_TAG;
-        $operation['username'] = $username;
-        $operation['labels'][] = xgit_label_for($ref, $old_obj, $new_obj);
-        break;
-        // Delete a branch
-      case ($type === 'empty' and $ref_type === 'heads'):
-        $operation['type'] = VERSIONCONTROL_OPERATION_TAG;
-        $operation['username'] = $username;
-        $operation['labels'][] = xgit_label_for($ref, $old_obj, $new_obj);
-        break;
-
-        // Delete a tag
-      case ($type === 'empty' and $ref_type === 'tags'):
-        $operation['type'] = VERSIONCONTROL_OPERATION_TAG;
-        $operation['username'] = $username;
-        $operation['labels'][] = xgit_label_for($ref, $old_obj, $new_obj);
-        break;
-      case 'blob':
-      case 'tree':
-        break;
-    }
+    $operation['type'] = xgit_operation_type($ref);
+    $operation['username'] = $username;
+    $operation['labels'][] = xgit_label_for($ref, $old_obj, $new_obj);
 
     // Set the $operation_items array from the item path and status.
     foreach ($item_paths as $path => $status) {
