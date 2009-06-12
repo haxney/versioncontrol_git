@@ -54,13 +54,16 @@ EOF;
 // ------------------------------------------------------------
 
 // Error constants.
-define('VERSIONCONTROL_GIT_ERROR_WRONG_ARGC',      1);
-define('VERSIONCONTROL_GIT_ERROR_NO_CONFIG',       2);
-define('VERSIONCONTROL_GIT_ERROR_NO_ACCOUNT',      3);
-define('VERSIONCONTROL_GIT_ERROR_NO_GIT_DIR',      4);
-define('VERSIONCONTROL_GIT_ERROR_INVALID_REF',     5);
-define('VERSIONCONTROL_GIT_ERROR_UNEXPECTED_TYPE', 6);
-define('VERSIONCONTROL_GIT_ERROR_NO_ACCESS',       7);
+define('VERSIONCONTROL_GIT_ERROR_WRONG_ARGC',       1);
+define('VERSIONCONTROL_GIT_ERROR_NO_CONFIG',        2);
+define('VERSIONCONTROL_GIT_ERROR_NO_ACCOUNT',       3);
+define('VERSIONCONTROL_GIT_ERROR_NO_GIT_DIR',       4);
+define('VERSIONCONTROL_GIT_ERROR_INVALID_REF',      5);
+define('VERSIONCONTROL_GIT_ERROR_UNEXPECTED_TYPE',  6);
+define('VERSIONCONTROL_GIT_ERROR_NO_ACCESS',        7);
+define('VERSIONCONTROL_GIT_ERROR_FAILED_BOOTSTRAP', 8);
+define('VERSIONCONTROL_GIT_ERROR_NO_REPOSITORY',    9);
+
 
 // An empty sha1 sum, represents the parent of the initial commit or the
 // deletion of a reference.
@@ -76,7 +79,7 @@ function xgit_bootstrap($xgit) {
   // Bootstrap Drupal so we can use drupal functions to access the databases, etc.
   if (!file_exists('./includes/bootstrap.inc')) {
     fwrite(STDERR, "Error: failed to load Drupal's bootstrap.inc file.\n");
-    exit(1);
+    exit(VERSIONCONTROL_GIT_ERROR_FAILED_BOOTSTRAP);
   }
 
   // Set up the multisite directory if necessary.
@@ -92,7 +95,13 @@ function xgit_bootstrap($xgit) {
 
   require_once(drupal_get_path('module', 'versioncontrol_git') .'/versioncontrol_git.module');
   require_once(drupal_get_path('module', 'versioncontrol_git') .'/versioncontrol_git.log.inc');
-  $xsvn['repo'] = versioncontrol_get_repository($xsvn['repo_id']);
+  $xgit['repo'] = versioncontrol_get_repository($xsvn['repo_id']);
+
+  if (isempty($xgit['repo'])) {
+    $message = "Error: git repository with id '%s' does not exist.\n";
+    fwrite(STDERR, sprintf($message, $xgit['repo_id']));
+    exit(VERSIONCONTROL_GIT_ERROR_NO_REPOSITORY);
+  }
 }
 
 /**
