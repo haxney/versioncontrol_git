@@ -74,8 +74,9 @@ class GitTestHelper extends DrupalWebTestCase {
     $this->repo['wc_path'] = $this->file_path .'/gitwc';
     $this->repo['created'] = FALSE;
     $this->base_path       = dirname($_SERVER['SCRIPT_FILENAME']);
-    $this->server_user     = $_ENV['APACHE_RUN_USER']; // TODO: Make this more portable
+    $this->obj_regex       = '([0-9a-f]+)';
     $this->module_source   = realpath(drupal_get_path('module', 'versioncontrol_git'));
+
 
     // The config 'hook' is special, so fill it in separately.
     $this->hooks['config']['src'] = $this->module_source .'/xgit/xgit-config.php';

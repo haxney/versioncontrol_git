@@ -67,10 +67,14 @@ class GitUpdateHookTestCase extends GitTestHelper {
     $message = $this->randomName();
     $result = $this->wcCommit($message);
 
-    $pattern_template = "Created initial commit ([0-9a-f]+): %s\n".
-                        "1 files changed, 1 insertions(+), 0 deletions(-)\n".
-                        "create mode 100644 %s\n";
-    $pattern = sprintf($pattern_template, $message, $path);
+    $pattern = array(
+      'Created initial commit %s: %s',
+      '1 files changed, 1 insertions(+), 0 deletions(-)',
+      'create mode 100644 %s',
+    );
+    $pattern = preg_quote(implode("\n", $pattern), '/');
+    $pattern = sprintf($pattern,$this->obj_regex, $message, $path);
+    $pattern = '/'. preg_quote($pattern, '/') .'/';
     $this->assertTrue(
       preg_match($pattern, $result, $matches),
       t('Commit the initial revision.'),
@@ -80,14 +84,19 @@ class GitUpdateHookTestCase extends GitTestHelper {
     $rev = $matches[1];
 
     $result = $this->wcPush();
-    $pattern_template = array(
-      'error: hooks/update exited with error code (\d+)',
+    $pattern = array(
+      'error: hooks/update exited with error code %s',
       'error: hook declined to update refs/heads/master',
       'To %s',
       '! [remote rejected] master -> master (hook declined)',
-      "error: failed to push some refs to '%s'\n",
+      "error: failed to push some refs to '%s'",
     );
-    $pattern = sprintf(implode("\n", $pattern_template), $this->repo['path'], $this->repo['path']);
+    $pattern = preg_quote(implode("\n", $pattern), '/');
+    $pattern = sprintf($pattern,
+               '(\d+)',
+               preg_quote($this->repo['path'], '/'),
+               preg_quote($this->repo['path'], '/'));
+    $pattern = '/'. $pattern .'/';
     $this->assertTrue(
       preg_match($pattern, $result, $matches),
       t('Fail pushing to repository without an account.'),
@@ -111,11 +120,11 @@ class GitUpdateHookTestCase extends GitTestHelper {
     $this->initGitAccount($user->uid, $username);
 
     $result = $this->wcPush();
-    $pattern_template = array(
+    $pattern = array(
       'To %s',
       '* [new branch]      master -> master',
     );
-    $pattern = sprintf(implode("\n", $pattern_template), $this->repo['path']);
+    $pattern = sprintf(implode("\n", $pattern), $this->repo['path']);
     $this->assertTrue(
       is_int(strpos($result, $pattern)),
       t('Successfully push to remote repository when user has an account.'),
