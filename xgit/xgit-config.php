@@ -58,6 +58,7 @@ define('VERSIONCONTROL_GIT_ERROR_WRONG_ARGC', 1);
 define('VERSIONCONTROL_GIT_ERROR_NO_CONFIG', 2);
 define('VERSIONCONTROL_GIT_ERROR_NO_ACCOUNT', 3);
 define('VERSIONCONTROL_GIT_ERROR_NO_GIT_DIR', 4);
+define('VERSIONCONTROL_GIT_ERROR_INVALID_REF', 4);
 
 // An empty sha1 sum, represents the parent of the initial commit or the
 // deletion of a reference.
@@ -169,13 +170,17 @@ function xsvn_get_commit_files($commit) {
  *     [...]
  */
 function _xgit_load_object($object) {
-  $type = xgit_get_type($object)
-  if ($type != 'commit') {
-    throw new Exception("Expected object '$object' to be a commit, is type '$type' instead.");
+  $type = xgit_get_type($object);
+  $allowed_types = array(
+    'commit',
+    'tag',
+  );
+  if (!in_array($type, $allowed_types) {
+    throw new Exception("Expected object '$object' to be a commit or tag, is type '$type' instead.");
   }
 
   if (!isset($xgit['objects'][$object]['log'])) {
-    $command = 'git log -n 1 --name-status --pretty=format"%%an <%%ae>" %s';
+    $command = 'git show --name-status --pretty=short %s';
     $command = sprintf($command, escapeshellarg($object));
     $xgit['objects'][$object]['log'] = trim(shell_exec($command));
   }
@@ -218,16 +223,55 @@ function xgit_is_valid($object) {
  *   - tree
  *   - commit
  *   - tag
+ *   - empty
  */
 function xgit_get_type($object) {
-  if (!xgit_is_valid($object)) {
+  if ($object != VERSIONCONTROL_GIT_EMPTY_REF && !xgit_is_valid($object)) {
     throw new Exception("Object '$object' is not valid in this repository");
   }
   if (!isset($xgit['objects'][$object]['type'])) {
-    $command = 'git cat-file -t %s';
-    $command = sprintf($command, escapeshellarg($object));
-    $xgit['objects'][$object]['type'] = trim(shell_exec($command));
+
+    if ($object == VERSIONCONTROL_GIT_EMPTY_REF) {
+      $xgit['objects'][$object]['type'] = 'empty';
+    } else {
+      $command = 'git cat-file -t %s';
+      $command = sprintf($command, escapeshellarg($object));
+      $xgit['objects'][$object]['type'] = trim(shell_exec($command));
+    }
+    $xgit['objects'][$object]['valid'] = TRUE;
   }
 
   return $xgit['objects'][$object]['type'];
+}
+
+/**
+ * Return the type of the given reference string.
+ *
+ * @param $ref
+ *   The reference string to check.
+ *
+ * @return
+ *   A string representing the type of the reference, or FALSE if an invalid
+ *   string. The type returned is one of:
+ *
+ *     - tags
+ *     - heads
+ *     - remotes
+ */
+function xgit_ref_type($ref) {
+  switch ($ref) {
+    case (strpos($ref, 'refs/tags') === 0):
+      $ret = 'tags';
+      break;
+    case (strpos($ref, 'refs/heads') === 0):
+      $ret = 'heads';
+      break;
+    case (strpos($ref, 'refs/remotes') === 0):
+      $ret = 'remotes';
+      break;
+    default:
+      $ret = FALSE;
+      break;
+  }
+  return $ret;
 }

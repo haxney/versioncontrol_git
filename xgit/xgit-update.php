@@ -70,12 +70,83 @@ function xgit_init($argc, $argv) {
 
   // Admins and other privileged users don't need to go through any checks.
   if (!in_array($username, $xgit['allowed_users'])) {
-    $username   = xgit_get_commit_author($new_obj);
-    $item_paths = xgit_get_commit_files($new_obj);
-
     // Do a full Drupal bootstrap.
     xgit_bootstrap($xgit);
 
+    // Construct basic common array. It will be the same across all cases.
+    $operation = array(
+      'repo_id' => $xgit['repo_id'],
+      'labels' => array(
+        array(
+          'name' => $ref,
+        )),
+    );
+
+    $ref_type = xgit_ref_type($ref);
+    if ($ref_type === FALSE) {
+      fwrite(STDERR, "Given reference '$ref' is invalid.\n\n");
+      exit(VERSIONCONTROL_GIT_ERROR_INVALID_REF);
+    }
+    $type = xgit_get_type($new_obj);
+
+    // Only get the username and paths if the ref can be resolved to a commit
+    // (either a commit or a tag).
+    $commit_types = array(
+      'commit',
+      'tag',
+    );
+    if (in_array($type, $commit_types)) {
+      $username   = xgit_get_commit_author($new_obj);
+      $item_paths = xgit_get_commit_files($new_obj);
+    }
+
+    // Handle each of the different cases.
+    switch (true) {
+      // Normal commit.
+      case ($type === 'commit' and $ref_type === 'heads'):
+        $operation['type'] = VERSIONCONTROL_OPERATION_COMMIT;
+        $operation['username'] = $username;
+        $operation['labels'][] = array(
+          // TODO: should we shorten the ref name, i.e. 'refs/heads/master' => 'master'?
+          'name' => $ref,
+          'type' => VERSIONCONTROL_OPERATION_BRANCH,
+          'action' => VERSIONCONTROL_ACTION_MODIFIED,
+        );
+        break;
+
+        // Un-annotated tag
+      case ($type === 'commit' and $ref_type === 'tags'):
+        $operation['type'] = VERSIONCONTROL_OPERATION_TAG;
+        $operation['username'] = $username;
+        $operation['labels'][] = array(
+          // TODO: should we shorten the ref name, i.e. 'refs/heads/master' => 'master'?
+          'name' => $ref,
+          'type' => VERSIONCONTROL_OPERATION_BRANCH,
+          'action' => VERSIONCONTROL_ACTION_MODIFIED,
+        );
+        break;
+      case ('tag'):
+        $operation['type'] = VERSIONCONTROL_OPERATION_TAG;
+        $operation['username']
+        break;
+      case 'empty':
+      case 'blob':
+      case 'tree':
+        break;
+    }
+      $operation = array(
+      'type' => VERSIONCONTROL_OPERATION_COMMIT,
+      'repo_id' => $xgit['repo_id'],
+      'username' => $username,
+      'labels' => array(
+        'name' => $ref,
+//        'type' => VERSIONCONTROL_OPERATION_BRANCH,
+//        'action' =>
+      ),
+    );
+    }
+    $username   = xgit_get_commit_author($new_obj);
+    $item_paths = xgit_get_commit_files($new_obj);
     // Construct a minimal commit operation array.
     $operation = array(
       'type' => VERSIONCONTROL_OPERATION_COMMIT,
