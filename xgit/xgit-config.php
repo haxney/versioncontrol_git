@@ -42,6 +42,7 @@ $xgit['multisite_directory'] = '';
 // Access control
 // ------------------------------------------------------------
 
+
 // Boolean to specify if users should be allowed to delete tags (= branches).
 $xgit['allow_tag_removal'] = TRUE;
 
@@ -55,6 +56,10 @@ EOF;
 // ------------------------------------------------------------
 // Shared code
 // ------------------------------------------------------------
+
+// Error constants.
+define('VERSIONCONTROL_GIT_ERROR_WRONG_ARGC', 1);
+define('VERSIONCONTROL_GIT_ERROR_NO_CONFIG', 2);
 
 function xgit_bootstrap($xgit) {
 
