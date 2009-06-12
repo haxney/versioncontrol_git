@@ -110,7 +110,7 @@ function xgit_init($argc, $argv) {
           // TODO: should we shorten the ref name, i.e. 'refs/heads/master' => 'master'?
           'name' => $ref,
           'type' => VERSIONCONTROL_OPERATION_BRANCH,
-          'action' => VERSIONCONTROL_ACTION_MODIFIED,
+          'action' => xgit_action($old_obj, $new_obj),
         );
         break;
 
@@ -121,15 +121,44 @@ function xgit_init($argc, $argv) {
         $operation['labels'][] = array(
           // TODO: should we shorten the ref name, i.e. 'refs/heads/master' => 'master'?
           'name' => $ref,
-          'type' => VERSIONCONTROL_OPERATION_BRANCH,
-          'action' => VERSIONCONTROL_ACTION_MODIFIED,
+          'type' => VERSIONCONTROL_OPERATION_TAG,
+          'action' => xgit_action($old_obj, $new_obj),
         );
         break;
-      case ('tag'):
+        // Annotated tag
+      case ($type === 'tag'):
+        if ($ref_type !== 'tags') {
+          fwrite(STDERR, "An annotated tag object must have a ref of the form 'refs/tags/*'\n\n");
+          exit(VERSIONCONTROL_GIT_ERROR_INVALID_REF);
+        }
         $operation['type'] = VERSIONCONTROL_OPERATION_TAG;
-        $operation['username']
+        $operation['username'] = $username;
+        $operation['labels'][] = array(
+          'name' => $ref,
+          'type' => VERSIONCONTROL_OPERATION_TAG,
+          'action' => VERSIONCONTROL_ACTION_CREATED, // Tags can only be created
+        );
         break;
-      case 'empty':
+        // Delete a branch
+      case ($type === 'empty' and $ref_type === 'heads'):
+        $operation['type'] = VERSIONCONTROL_OPERATION_TAG;
+        $operation['username'] = $username;
+        $operation['labels'][] = array(
+          'name' => $ref,
+          'type' => VERSIONCONTROL_OPERATION_TAG,
+          'action' => VERSIONCONTROL_ACTION_DELETED,
+        );
+        break;
+        // Delete a tag
+      case ($type === 'empty' and $ref_type === 'tags'):
+        $operation['type'] = VERSIONCONTROL_OPERATION_TAG;
+        $operation['username'] = $username;
+        $operation['labels'][] = array(
+          'name' => $ref,
+          'type' => VERSIONCONTROL_OPERATION_TAG,
+          'action' => VERSIONCONTROL_ACTION_CREATED, // Tags can only be created
+        );
+        break;
       case 'blob':
       case 'tree':
         break;

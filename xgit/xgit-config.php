@@ -58,7 +58,7 @@ define('VERSIONCONTROL_GIT_ERROR_WRONG_ARGC', 1);
 define('VERSIONCONTROL_GIT_ERROR_NO_CONFIG', 2);
 define('VERSIONCONTROL_GIT_ERROR_NO_ACCOUNT', 3);
 define('VERSIONCONTROL_GIT_ERROR_NO_GIT_DIR', 4);
-define('VERSIONCONTROL_GIT_ERROR_INVALID_REF', 4);
+define('VERSIONCONTROL_GIT_ERROR_INVALID_REF', 5);
 
 // An empty sha1 sum, represents the parent of the initial commit or the
 // deletion of a reference.
@@ -92,22 +92,30 @@ function xgit_bootstrap($xgit) {
 /**
  * Returns the author of the given commit in the repository.
  *
- * @param $rev_
- *   The revision number or transaction ID for which to find the author.
+ * @param $commit
+ *   The commit ID for which to find the author.
  *
- * @param $is_revision
- *   Is the $rev_or_tx argument a revision number or a transaction identifier?
- *   svnlook needs to know which type of object to look for. True if it is a
- *   revision, false if it is a transaction identifier. Defaults to revision.
- *
- * @param $repo
- *   The repository in which to look for the author.
+ * @return
+ *   The author of the commit or FALSE if none is found.
  */
-function xgit_get_commit_author($commit, $repo) {
-  $str = _xgit_load_commit($commit, $repo);
+function xgit_get_commit_author($commit) {
+  $lines = _xgit_load_commit($commit);
 
-  // Trim and return the first line of the string.
-  return trim(current(explode("\n", $str)));
+  $author = FALSE;
+  // Walk the lines until the first "Author:" line is found.
+  foreach ($lines as $line) {
+    if (preg_match('/^(?:Author|Tagger)\:/ (.+)', $line, $matches) === 0) {
+      $author = trim($matches[1]);
+      break;
+    }
+    // Headers end with a blank line; prevent any other information from being
+    // mistakenly recognized as an author line.
+    if (strlen($line) === 0) {
+      break;
+    }
+  }
+
+  return $author;
 }
 
 /**
@@ -137,18 +145,22 @@ function xgit_get_commit_author($commit, $repo) {
  *   of the item, as described above.
  */
 function xsvn_get_commit_files($commit) {
-  $str = _xgit_load_commit($commit);
-  $lines = preg_split('/\n/', $str, -1, PREG_SPLIT_NO_EMPTY);
-  // The first line is the author name.
-  array_shift($lines);
+  $lines = _xgit_load_commit($commit);
 
-  // Separate the status from the path names.
-  foreach ($lines as $line) {
+  $items = array();
+  // Walk the array backwards until no more files are found.
+  $line = end($lines);
+  do {
+    // A blank lines marks the end of the commit message, so stop there.
+    if (empty($line)) {
+      break;
+    }
     // Limit to 2 elements to avoid cutting up paths with spaces.
     list($status, $path) = split('/\s+/', $line, 2);
     $items[$path] = $status;
-  }
-  return $items;
+  } while($line = prev($lines));
+
+  return array_reverse($items, TRUE);
 }
 
 /**
@@ -161,13 +173,35 @@ function xsvn_get_commit_files($commit) {
  *   The path of the repository in which to look.
  *
  * @return
- *   The string result of looking up the object from the repository. The string
- *   will be in the form:
+
+ *   An array containing the lines of looking up the object from the
+ *   repository. The form depends on the type of object. If it is a commit or an
+ *   un-annotated tag, it looks like this:
  *
- *     [author name] <[author email]>
- *     [modified file 1]
- *     [modified file 2]
- *     [...]
+ *     commit <commit id>
+ *     Author: <author name and email>
+ *     Commit: <committer name and email>
+ *     <empty line>
+ *         <commit message>
+ *     <empty line>
+ *     <status>\t<modified file 1>
+ *     <status>\t<modified file 2>
+ *     <...>
+ *
+ *    Note that if the commit message contains empty lines, they will be
+ *    prefixed with four spaces, like the rest of the commit message.
+ *
+ *    Annotated tags, on the other hand, look like this:
+ *
+ *      tag <tag name without "refs/tags/">
+ *      Tagger: <tagger name and email>
+ *      Date: <date in iso8601 format>
+ *      <tag message>
+ *      <referenced object, usually a commit>
+ *
+ *    Note that tags do not have to identify commits, and there is no way (with
+ *    only this function) to differentiate between a tag pointing at a commit
+ *    and a tag pointing at a file whose first line is "commit <sha1 sum>".
  */
 function _xgit_load_object($object) {
   $type = xgit_get_type($object);
@@ -175,14 +209,16 @@ function _xgit_load_object($object) {
     'commit',
     'tag',
   );
-  if (!in_array($type, $allowed_types) {
+  if (!in_array($type, $allowed_types)) {
     throw new Exception("Expected object '$object' to be a commit or tag, is type '$type' instead.");
   }
 
   if (!isset($xgit['objects'][$object]['log'])) {
-    $command = 'git show --name-status --pretty=short %s';
+    $command = 'git show --name-status --pretty=short --date=iso8601 %s';
     $command = sprintf($command, escapeshellarg($object));
-    $xgit['objects'][$object]['log'] = trim(shell_exec($command));
+    $result = trim(shell_exec($command));
+    $result = preg_split('/\n/', $result, -1, PREG_SPLIT_NO_EMPTY);
+    $xgit['objects'][$object]['log'] = $result;
   }
 
   return $xgit['objects'][$object]['log'];
@@ -275,3 +311,64 @@ function xgit_ref_type($ref) {
   }
   return $ret;
 }
+
+/**
+ * Determine whether the action is a creation, modification, move, copy, merge
+ * or deletion by checking the old reference.
+ *
+ * TODO: Implement copied and moved detection.
+ *
+ * @param $old_obj
+ *   The old reference to check against the empty ref.
+ *
+ * @param $new_obj
+ *   The new value of this object.
+ *
+ * @return
+ *   One of the VERSIONCONTROL_ACTION_* constants.
+ */
+function xgit_action($old_obj, $new_obj) {
+  if ($old_obj === VERSIONCONTROL_GIT_EMPTY_REF) {
+    return VERSIONCONTROL_ACTION_CREATED;
+  } else {
+    $merge = xgit_merge_info($new_obj);
+    if ($merge) {
+      return VERSIONCONTROL_ACTION_MERGED;
+    }
+    return VERSIONCONTROL_ACTION_MODIFIED;
+  }
+}
+
+/**
+ * Detect whether the given object is a commit merging multiple other commits.
+ *
+ * @param $object
+ *   The object to check.
+ *
+ * @return
+ *   An array of merged references if this is a merge, or FALSE if not.
+ */
+function xgit_merge_info($object) {
+  if(!isset($xgit['objects'][$object]['merge'])) {
+    $lines = _xgit_load_object($object);
+    $merge = FALSE;
+    foreach ($lines as $line) {
+      if (preg_match('/^Merge\:/ (.+)', $line, $matches) === 0) {
+        $merge = preg_split('/\s+/', trim($matches[1]));
+        $merge = preg_replace('/\.+/', '', $merge);
+        break;
+      }
+
+      // Headers end with an empty line; prevent any non-header information from
+      // being mistaken as a merge specification.
+      if (strlen($line) === 0) {
+        break;
+      }
+    }
+
+    $xgit['objects'][$object]['merge'] = $merge;
+  }
+
+  return $xgit['objects'][$object]['merge'];
+}
+
