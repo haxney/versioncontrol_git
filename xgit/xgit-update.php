@@ -22,6 +22,10 @@ function xgit_help($cli, $output_stream=STDERR) {
   fwrite($output_stream, "Usage: php $cli <config file> <ref> <oldrev> <newrev>\n\n");
 }
 
+function xgit_help_hook($cli, $output_stream=STDERR) {
+  fwrite($output_stream, "$cli: GIT_DIR must be set.\n\n");
+}
+
 /**
  * The main function of the hook.
  *
@@ -41,7 +45,7 @@ function xgit_help($cli, $output_stream=STDERR) {
 function xgit_init($argc, $argv) {
   $this_file = array_shift($argv);   // argv[0]
 
-  if ($argc < 5) {
+  if ($argc != 5) {
     xgit_help($this_file, STDERR);
     exit(VERSIONCONTROL_GIT_ERROR_WRONG_ARGC);
   }
@@ -49,7 +53,7 @@ function xgit_init($argc, $argv) {
   $config_file = array_shift($argv); // argv[1]
   $ref         = array_shift($argv); // argv[2]
   $old_obj     = array_shift($argv); // argv[3]
-  $new_obj     = array_shift($argv); // argv[3]
+  $new_obj     = array_shift($argv); // argv[4]
 
   // Load the configuration file and bootstrap Drupal.
   if (!file_exists($config_file)) {
@@ -58,15 +62,17 @@ function xgit_init($argc, $argv) {
   }
   include_once $config_file;
 
-  // Third argument is FALSE to indicate a transaction.
-  $username    = xgit_get_commit_author($tx, $repo, FALSE);
-  $item_paths  = xgit_get_commit_files($tx, $repo, FALSE);
+  if (!isset($_ENV['GIT_DIR'])) {
+    xgit_help($this_file, STDERR);
+    exit(VERSIONCONTROL_GIT_ERROR_NO_GIT_DIR);
+  }
+  $repo         = $_ENV['GIT_DIR'];
 
-  // Check temporary file storage.
-  $tempdir = xgit_get_temp_directory($xgit['temp']);
-
-    // Admins and other privileged users don't need to go through any checks.
+  // Admins and other privileged users don't need to go through any checks.
   if (!in_array($username, $xgit['allowed_users'])) {
+    $username   = xgit_get_commit_author($new_obj);
+    $item_paths = xgit_get_commit_files($new_obj);
+
     // Do a full Drupal bootstrap.
     xgit_bootstrap($xgit);
 
@@ -75,7 +81,11 @@ function xgit_init($argc, $argv) {
       'type' => VERSIONCONTROL_OPERATION_COMMIT,
       'repo_id' => $xgit['repo_id'],
       'username' => $username,
-      'labels' => array(), // TODO: don't support labels yet.
+      'labels' => array(
+        'name' => $ref,
+//        'type' => VERSIONCONTROL_OPERATION_BRANCH,
+//        'action' =>
+      ),
     );
 
     // Set the $operation_items array from the item path and status.
