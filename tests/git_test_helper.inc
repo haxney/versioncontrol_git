@@ -85,6 +85,8 @@ class GitTestHelper extends DrupalWebTestCase {
 
     $this->hooks['config']['text'] = sprintf($format, $this->base_path, $GLOBALS['db_prefix']);
 
+    require_once($this->hooks['config']['src']);
+
     // Fill in each of the hooks.
     foreach ($this->hook_names as $hook) {
       $this->_fillHook($hook);
@@ -177,9 +179,9 @@ class GitTestHelper extends DrupalWebTestCase {
    * @return
    *   The repository object.
    */
-  function initDrupalRepo($update_method=VERSIONCONTROL_GIT_UPDATE_XGIT) {
+  function initDrupalRepo($name, $update_method=VERSIONCONTROL_GIT_UPDATE_CRON) {
     $menu_path = 'admin/project/versioncontrol-repositories/add-git';
-    $this->repo['name'] = $this->randomName();
+    $this->repo['name'] = $name;
 
     $edit = array();
     $edit['repo_name'] = $this->repo['name'];
@@ -189,7 +191,7 @@ class GitTestHelper extends DrupalWebTestCase {
     $repo = array_shift(versioncontrol_get_repositories(array(
                 'names' => array($this->repo['name'])
               )));
-    $this->repo['id'] = $repo['repo_id'];
+    $this->repo = array_merge($this->repo, $repo);
 
     return $repo;
   }
@@ -202,7 +204,7 @@ class GitTestHelper extends DrupalWebTestCase {
     $edit = array();
     $edit['account_name'] = $username;
 
-    $this->drupalPost($menu_path, $edit, t('Create Subversion account'));
+    $this->drupalPost($menu_path, $edit, t('Create Git account'));
   }
 
   /**
@@ -254,7 +256,7 @@ class GitTestHelper extends DrupalWebTestCase {
    * Push to the default (origin) remote branch and return the result.
    */
   function wcPush() {
-    return shell_exec('git push');
+    return shell_exec('git push origin master');
   }
 
   /**

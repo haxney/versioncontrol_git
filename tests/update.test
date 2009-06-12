@@ -38,4 +38,88 @@ class GitUpdateHookTestCase extends GitTestHelper {
       t('Shell Interaction')
     );
   }
+
+  /**
+   * Test pushing to the repository, both with and without a
+   */
+  public function testPushing() {
+    $this->initRepo();
+    $this->initHook('update');
+    $result = $this->wcClone();
+    $expected = sprintf('Initialized empty Git repository in %s', $this->repo['wc_path']);
+    $this->assertTrue(
+      is_int(strpos($result, $expected)),
+      t('Clone the git repository.'),
+      t('Shell Interaction')
+    );
+
+    $path     = $this->randomName();
+    $contents = $this->randomName();
+    $result   = $this->wcAddSampleFile($path, $contents);
+
+    $this->assertTrue(
+      is_int(strpos($result, "\n")),
+      t('Add test file to the repository (should not produce output).'),
+      t('Shell Interaction')
+    );
+
+    // Attempt to commit, but fail because the system user does not have access.
+    $message = $this->randomName();
+    $result = $this->wcCommit($message);
+
+    $pattern_template = "Created initial commit ([0-9a-f]+): %s\n".
+                        "1 files changed, 1 insertions(+), 0 deletions(-)\n".
+                        "create mode 100644 %s\n";
+    $pattern = sprintf($pattern_template, $message, $path);
+    $this->assertTrue(
+      preg_match($pattern, $result, $matches),
+      t('Commit the initial revision.'),
+      t('Shell Interaction')
+    );
+    // Get the revision identifier (the first match group).
+    $rev = $matches[1];
+
+    $result = $this->wcPush();
+    $pattern_template = array(
+      'error: hooks/update exited with error code (\d+)',
+      'error: hook declined to update refs/heads/master',
+      'To %s',
+      '! [remote rejected] master -> master (hook declined)',
+      "error: failed to push some refs to '%s'\n",
+    );
+    $pattern = sprintf(implode("\n", $pattern_template), $this->repo['path'], $this->repo['path']);
+    $this->assertTrue(
+      preg_match($pattern, $result, $matches),
+      t('Fail pushing to repository without an account.'),
+      t('Update hook')
+    );
+    $error_code = $matches[1];
+
+    $this->assertEqual(
+      $error_code,
+      VERSIONCONTROL_GIT_ERROR_NO_ACCOUNT,
+      t('Correct error code is returned.'),
+      t('Update hook')
+    );
+
+    $user = $this->drupalCreateUser(array('administer version control systems'));
+    $this->drupalLogin($user);
+    $username = $this->randomName();
+
+    // Create the Drupal repository and add a user account.
+    $this->initDrupalRepo($this->randomName());
+    $this->initGitAccount($user->uid, $username);
+
+    $result = $this->wcPush();
+    $pattern_template = array(
+      'To %s',
+      '* [new branch]      master -> master',
+    );
+    $pattern = sprintf(implode("\n", $pattern_template), $this->repo['path']);
+    $this->assertTrue(
+      is_int(strpos($result, $pattern)),
+      t('Successfully push to remote repository when user has an account.'),
+      t('Update hook')
+    );
+  }
 }

@@ -60,6 +60,7 @@ EOF;
 // Error constants.
 define('VERSIONCONTROL_GIT_ERROR_WRONG_ARGC', 1);
 define('VERSIONCONTROL_GIT_ERROR_NO_CONFIG', 2);
+define('VERSIONCONTROL_GIT_ERROR_NO_ACCOUNT', 3);
 
 function xgit_bootstrap($xgit) {
 
