@@ -434,7 +434,6 @@ function xgit_merge_info($object) {
  */
 function xgit_label_for($ref, $old_obj, $new_obj) {
   $label = array();
-  // TODO: should we shorten the ref name, i.e. 'refs/heads/master' => 'master'?
   $label['name'] = $ref;
   $label['type'] = xgit_operation_type($ref);
   $label['action'] = xgit_action($old_obj, $new_obj, TRUE);
@@ -678,6 +677,7 @@ function _xgit_assert_type($pairs) {
     }
   }
   return;
+}
 
 /**
  * Check the access permissions for an individual commit. Really all this does
@@ -716,5 +716,4 @@ function xgit_check_commit_access($commit, $label) {
     $operation_items[$path] = $item;
   }
   return versioncontrol_has_write_access($operation, $operation_items);
-}
 }
