@@ -34,7 +34,28 @@ class GitUpdateHookTestCase extends GitTestHelper {
 
     $this->assertTrue(
       is_int(strpos($result, $usage_text)),
-      t('Print help text when incorrect number of arguments is given.'),
+      t('Print help text when too few arguments are given.'),
+      t('Shell Interaction')
+    );
+
+    $this->assertEqual(
+      $retval,
+      VERSIONCONTROL_GIT_ERROR_WRONG_ARGC,
+      t('Return error code when too few arguments are given.'),
+      t('Shell Interaction')
+    );
+
+    list($result, $retval) = $this->execHook('update', 'too', 'many', 'arguments', 'for', 'the', 'hook');
+    $this->assertTrue(
+      is_int(strpos($result, $usage_text)),
+      t('Print help text when too many arguments are given.'),
+      t('Shell Interaction')
+    );
+
+    $this->assertEqual(
+      $retval,
+      VERSIONCONTROL_GIT_ERROR_WRONG_ARGC,
+      t('Return error code when too many arguments are given.'),
       t('Shell Interaction')
     );
   }
@@ -130,5 +151,92 @@ class GitUpdateHookTestCase extends GitTestHelper {
       t('Successfully push to remote repository when user has an account.'),
       t('Update hook')
     );
+  }
+
+  /**
+   * Test a number of different error conditions for the hook.
+   */
+  function testErrors() {
+    $this->initRepo();
+    $this->initHook('update');
+    $this->wcClone();
+
+    $path     = $this->randomName();
+    $contents = $this->randomName();
+    $result   = $this->wcAddSampleFile($path, $contents);
+    $message = $this->randomName();
+    $this->wcCommit($message);
+
+    list($result, $retval) = $this->wcPush();
+    $this->assertEqual(
+      $retval,
+      VERSIONCONTROL_GIT_ERROR_NO_REPOSITORY,
+      t('Update hook fails when no Drupal repository has been created.'),
+      t('Update hook')
+    );
+
+    $pattern = "Error: git repository with id '%s' does not exist.";
+    $this->assertTrue(
+      is_int(strpos($result, sprintf($pattern, $ths->repo['repo_id']))),
+      t('Update hook returns an error when no Drupal repository has been created.'),
+      t('Update hook')
+    );
+
+    list($result, $retval) = $this->execHook('update',
+                             'refs/invalid/master',
+                             VERSIONCONTROL_GIT_EMPTY_REF,
+                             VERSIONCONTROL_GIT_EMPTY_REF);
+
+    $this->assertEqual(
+      $retval,
+      VERSIONCONTROL_GIT_ERROR_NO_GIT_DIR,
+      t('Update hook returns an error when GIT_DIR is not set.'),
+      t('Update hook')
+    );
+
+    $ref = 'refs/invalid/master';
+    putenv(sprintf('GIT_DIR=', escapeshellarg($this->repo['path'])));
+    list($result, $retval) = $this->execHook('update',
+                             $ref,
+                             VERSIONCONTROL_GIT_EMPTY_REF,
+                             VERSIONCONTROL_GIT_EMPTY_REF);
+
+
+    $this->assertEqual(
+      $retval,
+      VERSIONCONTROL_GIT_ERROR_INVALID_REF,
+      t('Update hook returns an error when the reference is invalid.'),
+      t('Update hook')
+    );
+
+    $error_msg = sprintf("Given reference '%s' is invalid.", $ref);
+    $this->assertTrue(
+      is_int(strpos($result, $error_msg)),
+      t('Update hook returns an error message when the reference is invalid.'),
+      t('Update hook')
+    );
+
+    // A random ref, unlikely to exist within the repository
+    $new_obj = 'f8fcb0d040a13fb885bc1accd950f1f459c024b7';
+    $old_obj = VERSIONCONTROL_GIT_EMPTY_REF;
+    $ref = 'refs/heads/master';
+    list($result, $retval) = $this->execHook('update',
+                             $ref,
+                             $old_obj,
+                             $new_obj);
+    $this->assertEqual(
+      $retval,
+      VERSIONCONTROL_GIT_ERROR_INVALID_OBJ,
+      t('Update hook returns an error code when the object does not exist within the repository.'),
+      t('Update hook')
+    );
+
+    $error_msg = sprintf("Object '%s' is not valid in this repository", $new_obj);
+    $this->assertTrue(
+      is_int(strpos($result, $error_msg)),
+      t('Update hook returns an error message when the object does not exist within the repository.'),
+      t('Update hook')
+    );
+
   }
 }
