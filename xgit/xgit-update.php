@@ -67,52 +67,30 @@ function xgit_init($argc, $argv) {
     // Do a full Drupal bootstrap.
     xgit_bootstrap($xgit);
 
-    // Construct basic common array. It will be the same across all cases.
-    $operation = array(
-      'repo_id' => $xgit['repo_id'],
-      'labels' => array(
-        array(
-          'name' => $ref,
-        )),
-    );
-
     $ref_type = xgit_ref_type($ref);
     if ($ref_type === FALSE) {
       fwrite(STDERR, "Given reference '$ref' is invalid.\n\n");
       exit(VERSIONCONTROL_GIT_ERROR_INVALID_REF);
     }
-    $type = xgit_get_type($new_obj);
+    _xgit_assert_type(array(
+        $new_obj => array('commit', 'tag'),
+        $old_obj => array('commit', 'tag'),
+      ));
 
-    // If the object is not a commit or a tag, then exit with an error. This
-    // hook should only be receiving commits and tags.
-    $commit_types = array(
-      'commit',
-      'tag',
-    );
-    if (!in_array($type, $commit_types)) {
-      fwrite(STDERR, "Expected a commit or tag operation, received type '$type' for object '$new_obj'.");
-      exit(VERSIONCONTROL_GIT_ERROR_UNEXPECTED_TYPE);
-    }
-    $username   = xgit_get_commit_author($new_obj);
-    $item_paths = xgit_get_commit_files($new_obj);
+    $label = xgit_label_for($ref, $old_obj, $new_obj);
+    foreach (xgit_get_commits($old_obj, $new_obj) as $commit) {
+      $access = xgit_check_commit_access($commit, $label);
 
-    $operation['type'] = xgit_operation_type($ref);
-    $operation['username'] = $username;
-    $operation['labels'][] = xgit_label_for($ref, $old_obj, $new_obj);
-
-    // Set the $operation_items array from the item path and status.
-    foreach ($item_paths as $path => $properties) {
-      $item = xgit_get_operation_item($path, $properties);
-      $operation_items[$path] = $item;
-    }
-    $access = versioncontrol_has_write_access($operation, $operation_items);
-
-    // Fail and print out error messages if commit access has been denied.
-    if (!$access) {
-      fwrite(STDERR, implode("\n\n", versioncontrol_get_access_errors()) ."\n\n");
-      exit(VERSIONCONTROL_GIT_ERROR_NO_ACCESS);
+      // Fail and print out error messages if commit access has been denied.
+      if (!$access) {
+        fwrite(STDERR, implode("\n\n", versioncontrol_get_access_errors()) ."\n\n");
+        exit(VERSIONCONTROL_GIT_ERROR_NO_ACCESS);
+      }
     }
   }
+
+  // Everything succeeded. Allow operation to complete.
+  exit(0);
 }
 
 xgit_init($argc, $argv);

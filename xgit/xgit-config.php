@@ -678,4 +678,43 @@ function _xgit_assert_type($pairs) {
     }
   }
   return;
+
+/**
+ * Check the access permissions for an individual commit. Really all this does
+ * is convert the commit id and label name to a format suitable for
+ * versioncontrol_has_write_access() and passes them off to there.
+ *
+ * @param $commit
+ *   The commit id to check.
+ *
+ * @param $label
+ *   The label array, as specified in versioncontrol_has_write_access().
+ *
+ * @return
+ *   The output of versioncontrol_has_write_access() on the arguments.
+ */
+function xgit_check_commit_access($commit, $label) {
+      // Construct basic common array. It will be the same across all cases.
+    $operation = array(
+      'repo_id' => $xgit['repo_id'],
+      'labels' => array(
+        array(
+          'name' => $ref,
+        )),
+    );
+
+  $username   = xgit_get_commit_author($commit);
+  $item_paths = xgit_get_commit_files($commit);
+
+  $operation['type'] = xgit_operation_type($ref);
+  $operation['username'] = $username;
+  $operation['labels'][] = $label
+
+  // Set the $operation_items array from the item path and status.
+  foreach ($item_paths as $path => $properties) {
+    $item = xgit_get_operation_item($path, $properties);
+    $operation_items[$path] = $item;
+  }
+  return versioncontrol_has_write_access($operation, $operation_items);
+}
 }
