@@ -515,6 +515,131 @@ function xgit_get_operation_item($path, $properties) {
 }
 
 /**
+ * Returns an array of commit ids between the old and new commits. For pushes,
+ * this will be the list of commits being pushed. It is done using git's
+ * "old..new" syntax from git-rev-parse(1).
+ *
+ * Note that $new is not always a descendant of $old. This will be the case for
+ * non-fast forward updates. Users of this function must not rely on that
+ * assumption.
+ *
+ * @param $old
+ *   The id of the old commit. This is the old value of the ref before it is
+ *   updated.
+ *
+ * @param $new
+ *   The id of the new commit.
+ *
+ * @param $target_ref
+ *   If not NULL, exclude this ref from consideration by 'git rev-list'. This is
+ *   used for the 'post-receive' hook, which will need to prevent the updated
+ *   ref from being mistaken for a preexisting branch.
+ *
+ * @return
+ *   An array of commit ids. This will necessarily include $new, but will not
+ *   include $old.
+ */
+function xgit_get_commits($old, $new, $target_ref = NULL) {
+  _xgit_assert_type(array(
+      $old => array('commit', 'tag'),
+      $new => array('commit', 'tag'),
+    ));
+
+  $range_template = '%s..%s';
+
+  // VERSIONCONTROL_GIT_EMPTY_REF cannot appear as an argument to git rev-list,
+  // so if one of the objects is empty, it must be specially dealt with.
+  if ($old === VERSIONCONTROL_GIT_EMPTY_REF) {
+    // When we are creating a new branch, return all commits which do not exist
+    // on any other branch.
+    $allrefs = _xgit_all_refs($target_ref);
+
+    $range_template = sprintf('%%2$s --not %s', $allrefs);
+  } else if ($new === VERSIONCONTROL_GIT_EMPTY_REF) {
+    // A deletion, so no commits are being added.
+    return array();
+  }
+
+  $range = sprintf($range_template, $old, $new);
+  if (!isset($xgit['ranges'][$range])) {
+    $command = 'git rev-list %s';
+    $command = sprintf($command, escapeshellarg($range_template));
+    $result = trim(shell_exec($command));
+    $result = preg_split('/\n/', $result, -1, PREG_SPLIT_NO_EMPTY);
+    $xgit['ranges'][$range] = $result;
+  }
+
+  return $xgit['ranges'][$range];
+}
+
+/**
+ * Return a space-separated string of all of the (local) refs in the git
+ * repository.  Optionally exclude a particular ref.
+ *
+ * @param $except
+ *   If set, exclude the named ref from the results.
+ *
+ * @return
+ *   A space-separated string of all ref names in the repository.
+ */
+function _xgit_all_refs($except = NULL) {
+  $command = 'git rev-parse --symbolic-full-name --branches --tags';
+  $result = shell_exec($command);
+
+  $refs = implode(' ', explode("\n", $result));
+  foreach ($refs as $key => $value) {
+    // Yes, I could put the isset() outside the loop, but I don't want to nest
+    // that far.
+    if(isset($except) and $value === $except) {
+      unset($refs[$key]);
+    }
+  }
+}
+
+/**
+ * Gets either an array of branches which are "fully contained by" the given
+ * commit or those branches which are not contained by the given commit. This is
+ * useful for figuring out which commits are not already contained by a
+ * different branch, since
+ *
+ *   git rev-list <commit> --not <unmerged_branches>
+ *
+ * will return the commits which are parents of $commit and are not reachable
+ * from any other branch. This list can then be used to figure out which commits
+ * are introduced by a newly created branch.
+ *
+ * @param $commit
+ *   The commit for which to find the merged branches.
+ *
+ * @param $merged
+ *   Whether to get merged or unmerged branches. If TRUE, returns the merged
+ *   branches; FALSE gets the unmerged branches.
+ *
+ * @param $include_remote
+ *   Whether or not to include remote tracking branches in the search. Is FALSE
+ *   by default.
+ */
+function _xgit_get_merged_branches($commit, $merged = TRUE, $include_remote = FALSE) {
+  _xgit_assert_type(array($commit => 'commit'));
+
+  if (!isset($xgit['objects'][$commit]['unmerged'])) {
+    $remote_spec = $include_remote ? '-a' : '';
+    $merged_spec = $merged ? '--merged' : '--no-merged';
+    $command = 'git branch %s --no-color %s %s';
+    $command = sprintf($command, $remote_spec, $merged_spec, escapeshellarg($commit));
+    $result = shell_exec($command);
+    $branches = preg_split("/\n/", $result, -1, PREG_SPLIT_NO_EMPTY);
+
+    // There is a chance that $result may contain a '*' if there is a HEAD and it
+    // is included in the output.
+    $branches = preg_replace('/^([\* ] )?/', '', $branches);
+    $xgit['objects'][$commit]['unmerged'] = $branches;
+  }
+
+  return $xgit['objects'][$commit]['unmerged'];
+}
+
+/**
  * Check each element of $pairs to make sure that it is the correct type. Throws
  * an exception if it is not.
  *
