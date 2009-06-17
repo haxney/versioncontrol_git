@@ -96,7 +96,7 @@ function xgit_bootstrap($xgit) {
 
   require_once(drupal_get_path('module', 'versioncontrol_git') .'/versioncontrol_git.module');
   require_once(drupal_get_path('module', 'versioncontrol_git') .'/versioncontrol_git.log.inc');
-  $xgit['repo'] = versioncontrol_get_repository($xsvn['repo_id']);
+  $xgit['repo'] = versioncontrol_get_repository($xgit['repo_id']);
 
   if (!isset($_ENV['GIT_DIR'])) {
     xgit_help($this_file, STDERR);
