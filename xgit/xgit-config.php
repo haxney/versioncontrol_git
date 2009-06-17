@@ -63,6 +63,7 @@ define('VERSIONCONTROL_GIT_ERROR_UNEXPECTED_TYPE',  6);
 define('VERSIONCONTROL_GIT_ERROR_NO_ACCESS',        7);
 define('VERSIONCONTROL_GIT_ERROR_FAILED_BOOTSTRAP', 8);
 define('VERSIONCONTROL_GIT_ERROR_NO_REPOSITORY',    9);
+define('VERSIONCONTROL_GIT_ERROR_INVALID_OBJ',      10);
 
 
 // An empty sha1 sum, represents the parent of the initial commit or the
@@ -96,6 +97,13 @@ function xgit_bootstrap($xgit) {
   require_once(drupal_get_path('module', 'versioncontrol_git') .'/versioncontrol_git.module');
   require_once(drupal_get_path('module', 'versioncontrol_git') .'/versioncontrol_git.log.inc');
   $xgit['repo'] = versioncontrol_get_repository($xsvn['repo_id']);
+
+  if (!isset($_ENV['GIT_DIR'])) {
+    xgit_help($this_file, STDERR);
+    exit(VERSIONCONTROL_GIT_ERROR_NO_GIT_DIR);
+  }
+
+  $repo['git_dir']         = $_ENV['GIT_DIR'];
 
   if (isempty($xgit['repo'])) {
     $message = "Error: git repository with id '%s' does not exist.\n";
@@ -486,7 +494,7 @@ function xgit_get_operation_item($path, $properties) {
       break;
     case 'D': // Deleted
       $item['action'] = VERSIONCONTROL_ACTION_DELETED;
-      $item['type'] VERSIONCONTROL_ITEM_FILE_DELETED;
+      $item['type'] = VERSIONCONTROL_ITEM_FILE_DELETED;
       break;
     case 'M': // Modified
       $item['action'] = VERSIONCONTROL_ACTION_MODIFIED;

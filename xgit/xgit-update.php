@@ -62,12 +62,6 @@ function xgit_init($argc, $argv) {
   }
   include_once $config_file;
 
-  if (!isset($_ENV['GIT_DIR'])) {
-    xgit_help($this_file, STDERR);
-    exit(VERSIONCONTROL_GIT_ERROR_NO_GIT_DIR);
-  }
-  $repo         = $_ENV['GIT_DIR'];
-
   // Admins and other privileged users don't need to go through any checks.
   if (!in_array($username, $xgit['allowed_users'])) {
     // Do a full Drupal bootstrap.
