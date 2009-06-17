@@ -216,7 +216,6 @@ function xgit_get_commit_files($commit) {
  *   The path of the repository in which to look.
  *
  * @return
-
  *   An array containing the lines of looking up the object from the
  *   repository. The form depends on the type of object. If it is a commit or an
  *   un-annotated tag, it looks like this:
@@ -247,16 +246,13 @@ function xgit_get_commit_files($commit) {
  *    and a tag pointing at a file whose first line is "commit <sha1 sum>".
  */
 function _xgit_load_object($object) {
-  $type = xgit_get_type($object);
-  $allowed_types = array(
-    'commit',
-    'tag',
-  );
-  if (!in_array($type, $allowed_types)) {
-    throw new Exception("Expected object '$object' to be a commit or tag, is type '$type' instead.");
-  }
-
   if (!isset($xgit['objects'][$object]['log'])) {
+    $allowed_types = array(
+      'commit',
+      'tag',
+    );
+    _xgit_assert_type(array($object, $allowed_types));
+
     $command = 'git show --name-status --pretty=short --date=iso8601 %s';
     $command = sprintf($command, escapeshellarg($object));
     $result = trim(shell_exec($command));
@@ -516,4 +512,45 @@ function xgit_get_operation_item($path, $properties) {
       break;
   }
   return $item;
+}
+
+/**
+ * Check each element of $pairs to make sure that it is the correct type. Throws
+ * an exception if it is not.
+ *
+ * @param $pairs
+ *   An array of object ids => expected types (as a string or array). For
+ *   example:
+ *
+ *     array(
+ *       '2b49652db10c38589896f552bc6063e8955d664f' => 'commit',
+ *       'bb7966298ab644b20f06bf7ea9f35d5f3ce11c45' => 'blob',
+ *       '2b49652db10c38589896f552bc6063e8955d664f' => array('commit', 'tag'),
+ *     )
+ *
+ * @return
+ *   Nothing, throws exceptions if there is a failure.
+ */
+function _xgit_assert_type($pairs) {
+  $msg = "Type mismatch: expected object '%s' to be type '%s',  received '%s'.";
+  foreach($pairs as $object => $type) {
+    $received = xgit_get_type($object);
+
+    switch (gettype($type)) {
+      case 'string':
+        if ($received !== $type) {
+          $msg = sprintf($msg, $object, $type, $received);
+          throw new Exception($msg);
+        }
+        break;
+
+      case 'array':
+        if (!in_array($received, $type)) {
+          $msg = sprintf($msg, $object, implode(', ', $type), $received);
+          throw new Exception($msg);
+        }
+        break;
+    }
+  }
+  return;
 }
