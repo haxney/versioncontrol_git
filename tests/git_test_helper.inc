@@ -194,6 +194,10 @@ class GitTestHelper extends DrupalWebTestCase {
               )));
     $this->repo = array_merge($this->repo, $repo);
 
+    // Append the repo id to the xgit-config file.
+    $file = fopen($this->hooks['config']['dst'], 'a');
+    fprintf($file, "\$xgit['repo_id'] = '%s';\n", $this->repo['repo_id']);
+    fclose($file);
     return $repo;
   }
 
