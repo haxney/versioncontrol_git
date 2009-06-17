@@ -28,7 +28,7 @@ class GitUpdateHookTestCase extends GitTestHelper {
     $this->initRepo();
     $this->initHook('update');
 
-    $result = shell_exec($this->hooks['update']['file'] .' 2>&1');
+    list($result, $retval) = $this->execHook('update');
     $usage_text = t('Usage: php !cli <config file> <ref> <oldrev> <newrev>',
                   array('!cli' => $this->hooks['update']['dst']));
 
@@ -83,7 +83,7 @@ class GitUpdateHookTestCase extends GitTestHelper {
     // Get the revision identifier (the first match group).
     $rev = $matches[1];
 
-    $result = $this->wcPush();
+    list($result, $retval) = $this->wcPush();
     $pattern = array(
       'error: hooks/update exited with error code %s',
       'error: hook declined to update refs/heads/master',
@@ -119,7 +119,7 @@ class GitUpdateHookTestCase extends GitTestHelper {
     $this->initDrupalRepo($this->randomName());
     $this->initGitAccount($user->uid, $username);
 
-    $result = $this->wcPush();
+    list($result, $ret_val) = $this->wcPush();
     $pattern = array(
       'To %s',
       '* [new branch]      master -> master',

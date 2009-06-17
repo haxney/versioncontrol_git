@@ -257,7 +257,9 @@ class GitTestHelper extends DrupalWebTestCase {
    * Push to the default (origin) remote branch and return the result.
    */
   function wcPush() {
-    return shell_exec('git push origin master');
+    exec('git push origin master', $output, $ret_val);
+
+    return array(implode("\n", $output), $ret_val);
   }
 
   /**
@@ -304,5 +306,27 @@ class GitTestHelper extends DrupalWebTestCase {
       t('Found a themed page with the given commit.'),
       t('operation log')
     );
+  }
+
+  /**
+   * Run the given hook with a variable number of arguments.
+   *
+   * @param $hook
+   *   The name of the hook to run.
+   *
+   * @param ...
+   *   Variable number of arguments to pass to the hook.
+   *
+   * @return
+   *   A list of the output of the command and the return value.
+   */
+  function execHook($hook) {
+    $args = func_get_args();
+    $command = $this->hooks[array_shift($args)]['file'] .' ';
+    $command .= implode(' ', $args);
+    exec($command, $output, $retval);
+
+    $output = implode("\n", $output);
+    return array($output, $retval);
   }
 }
