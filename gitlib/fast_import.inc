@@ -168,8 +168,15 @@ class GitFastImport {
    *     )
    *
    * @param $options
-   *   Command-line options to pass to git fast-import.
+   *   Command-line options to pass to git fast-import. Note that fastImport()
+   *   automatically unlinks the file referenced by the 'export-marks' option,
+   *   so if the contents of the file are needed, make sure to open it with
+   *   fopen() *before* calling fastImport().
    *
+   * @return
+   *   An array of ($return_value, $marks).
+   *
+   *   $marks is an array of (markid => SHA-1).
    */
   function fastImport($commands, $options) {
     $options = array_merge($this->default_options, $options);
@@ -210,7 +217,13 @@ class GitFastImport {
           throw new Exception("Unknown command type: ". $command['command']);
       }
     }
+    $ret_val = fclose($proc);
+    $marks = self::readMarksFile($options['export-marks']);
 
+    // Clean up temporary file.
+    unlink($options['export-marks'];
+
+    return array($ret_val, $marks);
   }
 
   /**
@@ -235,6 +248,28 @@ class GitFastImport {
     }
 
     return $command;
+  }
+
+  /**
+   * Read a marks file as output from git-fast-import(1) and return it as an
+   * array.
+   *
+   * @param $filename
+   *   The name of the marks file to read.
+   *
+   * @return
+   *   An array of mark-id => SHA-1.
+   */
+  public static function readMarksFile($filename) {
+    $lines = file($filename, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    $marks = array();
+    foreach ($lines as $line) {
+      $split = preg_split(' ', $line);
+      // First item is the markid, the second is the SHA-1
+      $marks[$split[0]] = $split[1];
+    }
+
+    return $marks;
   }
 
   /**
