@@ -34,12 +34,20 @@ class GitLibFastImportTestCase extends DrupalWebTestCase {
    */
   public function testBuildCommandLine() {
     $command = 'git fast-import ';
+    $expected = $command;
+    $this->assertEqual(
+      $expected,
+      $this->fast->buildCommandLine(),
+      'Correctly returns just the bare command.',
+      'buildCommandLine()'
+    );
+
     $default_opts = '--date-format=raw --stats';
     $expected = $command . $default_opts;
     $this->assertEqual(
       $expected,
-      $this->fast->buildCommandLine(),
-      'Correctly prints default options.',
+      $this->fast->buildCommandLine($this->fast->defaultOptions()),
+      'Correctly returns the command with default arguments..',
       'buildCommandLine()'
     );
 
