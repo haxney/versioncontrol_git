@@ -593,17 +593,9 @@ class GitTestHelper extends DrupalWebTestCase {
       $output .= sprintf("mark :%\n", $mark);
     }
     if (!empty($author)) {
-      $output .= sprintf("author %s <%s> %s %s\n",
-                 $author['name'],
-                 $author['email'],
-                 $author['when']['time'],
-                 $author['when']['offutc']);
+      $output .= $this->handleAuthor('author', $author);
     }
-    $output .= sprintf("committer %s <%s> %s %s\n",
-               $committer['name'],
-               $committer['email'],
-               $committer['when']['time'],
-               $committer['when']['offutc']);
+    $output .= $this->handleAuthor('committer', $committer);
     $output .= $this->handleData($message);
     if (!empty($from)) {
       $output .= sprintf("from %s\n", $from);
@@ -631,6 +623,40 @@ class GitTestHelper extends DrupalWebTestCase {
    */
   function handleData($data) {
     return sprintf("data %d\n%s\n", strlen($data), $data);
+  }
+
+  /**
+   * Format and return the fast-import specification for the given author.
+   *
+   * @param $role_name
+   *   The role to put in the output, such as 'author', 'committer', or
+   *   'tagger'.
+   *
+   * @param $author
+   *   The author array, of the form:
+   *
+   *     'tagger' => array(
+   *       'name' => 'name',
+   *       'email' => 'name@example.com',
+   *       'when' => array(
+   *         'time' => 1245480094,
+   *         'offutc' => '+0000',
+   *       ),
+   *     )
+   *
+   * @return
+   *   A formatted string, suitable for inclusion in a git-fast-import(1)
+   *   command stream.
+   */
+  function handleAuthor($role_name, $author) {
+    $replacements = array(
+      $role_name,
+      $author['name'],
+      $author['email'],
+      $author['when']['time'],
+      $author['when']['offutc']
+    );
+    return vsprintf("%s %s <%s> %s %s\n", $replacements);
   }
 
   /**
