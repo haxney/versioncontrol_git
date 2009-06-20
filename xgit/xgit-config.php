@@ -708,7 +708,7 @@ function xgit_check_commit_access($commit, $label) {
 
   $operation['type'] = xgit_operation_type($ref);
   $operation['username'] = $username;
-  $operation['labels'][] = $label
+  $operation['labels'][] = $label;
 
   // Set the $operation_items array from the item path and status.
   foreach ($item_paths as $path => $properties) {
