@@ -550,7 +550,8 @@ class GitTestHelper extends DrupalWebTestCase {
    * @return
    *   An author array which has been checked for correctness.
    */
-  protected function checkAndGetAuthor($author, $required=TRUE) {
+  protected function checkAndGetAuthor($command, $key, $required=TRUE) {
+    $author = $command[$key];
     if (empty($author) and !$required) {
       return array();
     } elseif (empty($author)) {
@@ -580,8 +581,8 @@ class GitTestHelper extends DrupalWebTestCase {
     $output    = '';
     $ref       = $this->checkAndGet($command, 'ref');
     $mark      = $this->checkAndGet($command, 'mark', FALSE);
-    $author    = $this->checkAndGetAuthor($command['author'], FALSE);
-    $committer = $this->checkAndGetAuthor($command['committer']);
+    $author    = $this->checkAndGetAuthor($command, 'author', FALSE);
+    $committer = $this->checkAndGetAuthor($command, 'committer');
     $message   = $this->checkAndGet($command, 'message');
     $from      = $this->checkAndGet($command, 'from', FALSE);
     $merge     = $this->checkAndGet($command, 'merge', FALSE);
