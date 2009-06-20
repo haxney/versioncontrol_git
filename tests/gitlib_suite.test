@@ -1,0 +1,3 @@
+<?php
+
+require_once(drupal_get_path('module', 'versioncontrol_git') .'/gitlib/tests/fast_import.test');
