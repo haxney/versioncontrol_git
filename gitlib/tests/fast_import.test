@@ -63,7 +63,7 @@ class GitLibFastImportTestCase extends DrupalWebTestCase {
     $expected = $command . $default_opts . sprintf($opts, $pack_size, $file_name);
     $this->assertEqual(
       $expected,
-      $this->fast->buildCommandLine($opts_args),
+      $this->fast->buildCommandLine(array_merge($this->fast->defaultOptions(), $opts_args)),
       'Correctly format supplied arguments.',
       'buildCommandLine()'
     );
