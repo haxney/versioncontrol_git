@@ -631,6 +631,29 @@ class GitTestHelper extends DrupalWebTestCase {
   }
 
   /**
+   * Handle a 'reset' operation to change the value of a ref.
+   *
+   * @param $command
+   *   A 'reset' command array as described in fastImport().
+   *
+   * @return
+   *   The git-fast-import(1) representation of $command.
+   */
+  function handle_reset_command($command) {
+    $output = '';
+    $ref    = $this->checkAndGet($command, 'ref');
+    $from   = $this->checkAndGet($command, 'from', FALSE);
+
+    $output .= sprintf("reset %s\n", $ref);
+    if ($from) {
+      sprintf("from %s\n", $from);
+    }
+    $output .= "\n";
+
+    return $output;
+  }
+
+  /**
    * Return a data command.
    *
    * @param $data
