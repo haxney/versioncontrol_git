@@ -178,7 +178,7 @@ class GitFastImport {
    *
    *   $marks is an array of (markid => SHA-1).
    */
-  function fastImport($commands, $options) {
+  public function fastImport($commands, $options) {
     $options = array_merge($this->default_options, $options);
 
     if (empty($options['export-marks'])) {
@@ -235,7 +235,7 @@ class GitFastImport {
    * @return
    *   A string suitable for execution by proc_open and similar.
    */
-  protected function buildCommandLine($options) {
+  public function buildCommandLine($options) {
     $command = 'git fast-import ';
     // Set the options for git fast-import
     foreach ($options as $key => $value) {
