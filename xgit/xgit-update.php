@@ -77,6 +77,13 @@ function xgit_init($argc, $argv) {
         $old_obj => array('commit', 'tag'),
       ));
 
+    // Debugging help
+    if ($GLOBALS['xgit_debug']) {
+      $commits = xgit_get_commits($old_obj, $new_obj);
+      $commits = implode(' ', $commits);
+      fwrite(STDERR, 'DEBUG COMMITS:'. $commits ."\n");
+    }
+
     $label = xgit_label_for($ref, $old_obj, $new_obj);
     foreach (xgit_get_commits($old_obj, $new_obj) as $commit) {
       $access = xgit_check_commit_access($commit, $label);
