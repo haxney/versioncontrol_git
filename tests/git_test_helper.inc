@@ -645,7 +645,7 @@ class GitTestHelper extends DrupalWebTestCase {
     $from   = $this->checkAndGet($command, 'from', FALSE);
 
     $output .= sprintf("reset %s\n", $ref);
-    if ($from) {
+    if (!empty($from)) {
       sprintf("from %s\n", $from);
     }
     $output .= "\n";
