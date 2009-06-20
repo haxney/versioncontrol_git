@@ -378,7 +378,7 @@ class GitTestHelper extends DrupalWebTestCase {
    *         'when' => array(
    *           'time' => 1245480094,
    *           'offutc' => '+0000', // The offset of the timezone from UTC
-   *         )
+   *         ),
    *       ),
    *       'committer' => array(
    *         'name' => "name",
@@ -386,7 +386,7 @@ class GitTestHelper extends DrupalWebTestCase {
    *         'when' => array(
    *           'time' => 1245480094,
    *           'offutc' => '+0000', // The offset of the timezone from UTC
-   *         )
+   *         ),
    *       ),
    *       'message' => "commit message",
    *       'from' => 'commitish', // Optional
@@ -394,7 +394,7 @@ class GitTestHelper extends DrupalWebTestCase {
    *       'merge' => array(
    *         'commitish1',
    *         'commitish2',
-   *       )
+   *       ),
    *
    *       'operations' => array(
    *         array(
@@ -422,7 +422,7 @@ class GitTestHelper extends DrupalWebTestCase {
    *         ),
    *
    *         'filedeleteall',
-   *       )
+   *       ),
    *     )
    *
    *   - array(
@@ -436,7 +436,8 @@ class GitTestHelper extends DrupalWebTestCase {
    *           'time' => 1245480094,
    *           'offutc' => '+0000',
    *         ),
-   *       )
+   *       ),
+   *       'message' => 'Tag message.',
    *     )
    *
    *   - array(
