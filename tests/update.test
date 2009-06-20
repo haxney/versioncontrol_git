@@ -14,7 +14,7 @@ class GitUpdateHookTestCase extends GitTestHelper {
 
   public static function getInfo() {
     return array(
-      'name' => t('versioncontrol_git update Hook'),
+      'name' => t('"update" hook'),
       'description' => t('Test the functionality of the Git update hook.'),
       'group' => t('Version Control - Git'),
     );
