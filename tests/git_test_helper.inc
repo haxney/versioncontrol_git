@@ -576,7 +576,7 @@ class GitTestHelper extends DrupalWebTestCase {
    *   The string appropriate for 'git-fast-import' produced from the command.
    */
   function handle_commit_command($command) {
-    $result    = '';
+    $output    = '';
     $ref       = $this->checkAndGet($command, 'ref');
     $mark      = $this->checkAndGet($command, 'mark', FALSE);
     $author    = $this->checkAndGetAuthor($command['author'], FALSE);
@@ -586,36 +586,36 @@ class GitTestHelper extends DrupalWebTestCase {
     $merge     = $this->checkAndGet($command, 'merge', FALSE);
     $ops       = $this->checkAndGet($command, 'operations', FALSE);
 
-    $result .= sprintf("commit %s\n", $ref);
+    $output .= sprintf("commit %s\n", $ref);
     if (!empty($mark)) {
-      $result .= sprintf("mark :%\n", $mark);
+      $output .= sprintf("mark :%\n", $mark);
     }
     if (!empty($author)) {
-      $result .= sprintf("author %s <%s> %s %s\n",
+      $output .= sprintf("author %s <%s> %s %s\n",
                  $author['name'],
                  $author['email'],
                  $author['when']['time'],
                  $author['when']['offutc']);
     }
-    $result .= sprintf("committer %s <%s> %s %s\n",
+    $output .= sprintf("committer %s <%s> %s %s\n",
                $committer['name'],
                $committer['email'],
                $committer['when']['time'],
                $committer['when']['offutc']);
-    $result .= $this->handleData($message);
+    $output .= $this->handleData($message);
     if (!empty($from)) {
-      $result .= sprintf("from %s\n", $from);
+      $output .= sprintf("from %s\n", $from);
     }
     foreach ($merge as $id) {
-      $result .= sprintf("merge %s\n", $id);
+      $output .= sprintf("merge %s\n", $id);
     }
     foreach ($ops as $op) {
-      $result .= handleOperation($op);
+      $output .= handleOperation($op);
     }
     // not necessary in newer versions of git.
-    $result .= "\n";
+    $output .= "\n";
 
-    return $result;
+    return $output;
   }
 
   /**
