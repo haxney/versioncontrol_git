@@ -48,6 +48,14 @@ class GitFastImport {
     $this->path = $path;
     $this->default_options = array_merge(self::$DEFAULT_OPTIONS, $default_options);
   }
+
+  /**
+   * Gets the default options of this instance.
+   */
+  public function defaultOptions() {
+    return $this->default_options;
+  }
+
   /**
    * Run 'git fast-import' on the working copy with the given options.
    *
