@@ -653,6 +653,39 @@ class GitTestHelper extends DrupalWebTestCase {
     return $output;
   }
 
+
+  /**
+   * Handle a 'checkpoint' operation.
+   *
+   * @param $command
+   *   A 'checkpoint' command array as described in fastImport().
+   *
+   * @return
+   *   The git-fast-import(1) representation of $command.
+   */
+  function handle_checkpoint_command($command) {
+    $output = "checkpoint\n";
+
+    return $output;
+  }
+
+  /**
+   * Handle a 'progress' operation.
+   *
+   * @param $command
+   *   A 'progress' command array as described in fastImport().
+   *
+   * @return
+   *   The git-fast-import(1) representation of $command.
+   */
+  function handle_progress_command($command) {
+    $message = $this->checkAndGet($command, 'message');
+    $output = sprintf("progress %s\n", $message);
+
+    return $output;
+  }
+
+
   /**
    * Return a data command.
    *
