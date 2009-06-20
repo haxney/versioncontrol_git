@@ -349,7 +349,7 @@ class GitFastImport {
 
     $output .= sprintf("commit %s\n", $ref);
     if (!empty($mark)) {
-      $output .= sprintf("mark :%\n", $mark);
+      $output .= sprintf("mark :%d\n", $mark);
     }
     if (!empty($author)) {
       $output .= $this->handleAuthor('author', $author);
