@@ -460,9 +460,11 @@ class GitTestHelper extends DrupalWebTestCase {
   function fastImport($commands, $options) {
     $command = 'git fast-import ';
 
+    $marks_file = $this->file_path . $this->randomName();
     $default_options = array(
       'date-format' => 'raw',
       'stats'
+      'export-marks' => $marks_file
     );
     $options = array_merge($default_options, $options);
 
@@ -576,14 +578,130 @@ class GitTestHelper extends DrupalWebTestCase {
   function handle_commit_command($command) {
     $result    = '';
     $ref       = $this->checkAndGet($command, 'ref');
-    $mark      = $command['mark'];
+    $mark      = $this->checkAndGet($command, 'mark', FALSE);
     $author    = $this->checkAndGetAuthor($command['author'], FALSE);
     $committer = $this->checkAndGetAuthor($command['committer']);
     $message   = $this->checkAndGet($command, 'message');
     $from      = $this->checkAndGet($command, 'from', FALSE);
     $merge     = $this->checkAndGet($command, 'merge', FALSE);
-    $ops       = $this->checkAndGet($command, 'operations');
+    $ops       = $this->checkAndGet($command, 'operations', FALSE);
 
-    $result .= sprintf("commit %\n");
+    $result .= sprintf("commit %s\n", $ref);
+    if (!empty($mark)) {
+      $result .= sprintf("mark :%\n", $mark);
+    }
+    if (!empty($author)) {
+      $result .= sprintf("author %s <%s> %s %s\n",
+                 $author['name'],
+                 $author['email'],
+                 $author['when']['time'],
+                 $author['when']['offutc']);
+    }
+    $result .= sprintf("committer %s <%s> %s %s\n",
+               $committer['name'],
+               $committer['email'],
+               $committer['when']['time'],
+               $committer['when']['offutc']);
+    $result .= $this->handleData($message);
+    if (!empty($from)) {
+      $result .= sprintf("from %s\n", $from);
+    }
+    foreach ($merge as $id) {
+      $result .= sprintf("merge %s\n", $id);
+    }
+    foreach ($ops as $op) {
+      $result .= handleOperation($op);
+    }
+    // not necessary in newer versions of git.
+    $result .= "\n";
+
+    return $result;
+  }
+
+  /**
+   * Return a data command.
+   *
+   * @param $data
+   *   The data to format.
+   *
+   * @return
+   *   The formatted data command, suitable for git fast-import.
+   */
+  function handleData($data) {
+    return sprintf("data %d\n%s\n", strlen($data), $data);
+  }
+
+  /**
+   * Handle the given operation and return the string of the operation.
+   */
+  protected function handleOperation($op) {
+    $output = '';
+    $op_type = $this->checkAndGet($op, 'operation');
+    switch ($op_type) {
+      case 'filemodify':
+        $mode = $this->convertMode($this->checkAndGet($op, 'mode');
+        $output .= sprintf("M %s inline %s\n",
+                   $this->checkAndGet($op, 'mode'),
+                   $mode);
+        $output .= $this->handleData($this->checkAndGet($op, 'data'));
+        break;
+
+      case 'filedelete':
+        $output .= sprintf("D %s\n", $this->checkAndGet($op, 'path'));
+        break;
+
+      case 'filecopy':
+        $output .= sprintf("C %s %s\n",
+                   $this->checkAndGet($op, 'src'),
+                   $this->checkAndGet($op, 'dst'));
+        break;
+
+      case 'filerename':
+        $output .= sprintf("R %s %s\n",
+                   $this->checkAndGet($op, 'src'),
+                   $this->checkAndGet($op, 'dst'));
+        break;
+      case 'filedeleteall':
+        $output .= "deleteall\n";
+        break;
+      default:
+        throw new Exception("Unknown operation type '$op_type'.");
+    }
+
+    return $output;
+  }
+
+  /**
+   * Converts a mode string to git's numerical mode specification.
+   *
+   * @param $mode
+   *   The mode string, one of:
+   *
+   *   - normal
+   *   - executable
+   *   - symlink
+   *   - gitlink
+   *
+   * @return
+   *   The numerical mode, as an integer.
+   */
+  function convertMode($mode) {
+    switch ($mode) {
+      case 'normal':
+        $mode_int = 100644;
+        break;
+      case 'executable':
+        $mode_int = 100755;
+        break;
+      case 'symlink':
+        $mode_int = 120000;
+        break;
+      case 'gitlink':
+        $mode_int = 160000;
+        break;
+      default:
+        throw new Exception('Mode specification not recognized:'. $this->checkAndGet($op, 'path'));
+    }
+    return $mode_int;
   }
 }
