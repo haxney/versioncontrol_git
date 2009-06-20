@@ -46,7 +46,7 @@ class GitFastImport {
    */
   public function __construct($path, $default_options = array()) {
     $this->path = $path;
-    $this->default_options = array_merge(self::DEFAULT_OPTIONS, $default_options);
+    $this->default_options = array_merge(self::$DEFAULT_OPTIONS, $default_options);
   }
   /**
    * Run 'git fast-import' on the working copy with the given options.
@@ -221,7 +221,7 @@ class GitFastImport {
     $marks = self::readMarksFile($options['export-marks']);
 
     // Clean up temporary file.
-    unlink($options['export-marks'];
+    unlink($options['export-marks']);
 
     return array($ret_val, $marks);
   }
@@ -318,8 +318,8 @@ class GitFastImport {
     }
     $this->checkAndGet($author, 'when', $required);
     $author = array(
-      'name'  => $this->checkAndGet($author, 'name');
-      'email' => $this->checkAndGet($author, 'email');
+      'name'  => $this->checkAndGet($author, 'name'),
+      'email' => $this->checkAndGet($author, 'email'),
       'when'  => array(
         'time'   => $this->checkAndGet($author['when'], 'time'),
         'offutc' => $this->checkAndGet($author['when'], 'offutc'),
@@ -383,7 +383,7 @@ class GitFastImport {
 
     $output .= sprintf("tag %s\n", $name);
     $output .= sprintf("from %s\n", $from);
-    $output .= $this->handleAuthor('tagger' $tagger);
+    $output .= $this->handleAuthor('tagger', $tagger);
     $output .= $this->handleData($message);
 
     return $output;
@@ -500,7 +500,7 @@ class GitFastImport {
     $op_type = $this->checkAndGet($op, 'operation');
     switch ($op_type) {
       case 'filemodify':
-        $mode = $this->convertMode($this->checkAndGet($op, 'mode');
+        $mode = $this->convertMode($this->checkAndGet($op, 'mode'));
         $output .= sprintf("M %s inline %s\n",
                    $this->checkAndGet($op, 'mode'),
                    $mode);
