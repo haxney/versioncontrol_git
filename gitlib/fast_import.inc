@@ -235,7 +235,7 @@ class GitFastImport {
    * @return
    *   A string suitable for execution by proc_open and similar.
    */
-  public function buildCommandLine($options) {
+  public function buildCommandLine($options=array()) {
     $command = 'git fast-import ';
     // Set the options for git fast-import
     foreach ($options as $key => $value) {
