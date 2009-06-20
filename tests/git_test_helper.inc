@@ -613,6 +613,24 @@ class GitTestHelper extends DrupalWebTestCase {
   }
 
   /**
+   * Handle a 'tag' operation for an annotated tag.
+   */
+  function handle_tag_command($command) {
+    $output  = '';
+    $name    = $this->checkAndGet($command, 'name');
+    $from    = $this->checkAndGet($command, 'from');
+    $tagger  = $this->checkAndGetAuthor($command, 'tagger');
+    $message = $this->checkAndGet($command, 'message');
+
+    $output .= sprintf("tag %s\n", $name);
+    $output .= sprintf("from %s\n", $from);
+    $output .= $this->handleAuthor('tagger' $tagger);
+    $output .= $this->handleData($message);
+
+    return $output;
+  }
+
+  /**
    * Return a data command.
    *
    * @param $data
