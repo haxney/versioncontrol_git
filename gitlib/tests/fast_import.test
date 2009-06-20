@@ -42,12 +42,12 @@ class GitLibFastImportTestCase extends DrupalWebTestCase {
       'buildCommandLine()'
     );
 
-    $default_opts = '--date-format=raw --stats';
+    $default_opts = '--date-format=raw --stats ';
     $expected = $command . $default_opts;
     $this->assertEqual(
       $expected,
       $this->fast->buildCommandLine($this->fast->defaultOptions()),
-      'Correctly returns the command with default arguments..',
+      'Correctly returns the command with default arguments.',
       'buildCommandLine()'
     );
 
@@ -59,7 +59,7 @@ class GitLibFastImportTestCase extends DrupalWebTestCase {
       'max-pack-size' => $pack_size,
       'export-pack-edges' => $file_name,
     );
-    $opts = '--quiet --force --max-pack-size=%s --export-pack-edges=%s';
+    $opts = '--quiet --force --max-pack-size=%s --export-pack-edges=%s ';
     $expected = $command . $default_opts . sprintf($opts, $pack_size, $file_name);
     $this->assertEqual(
       $expected,

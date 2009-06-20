@@ -249,9 +249,9 @@ class GitFastImport {
     foreach ($options as $key => $value) {
       // If the format is 'key' => 'value', output '--key=value', otherwise, output '--value'
       if (is_string($key)) {
-        $command .= sprintf('--%s=%s', $key, $value);
+        $command .= sprintf('--%s=%s ', $key, $value);
       } else {
-        $command .= sprintf('--%s', $value);
+        $command .= sprintf('--%s ', $value);
       }
     }
 
