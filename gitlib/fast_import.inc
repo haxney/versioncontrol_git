@@ -170,26 +170,15 @@ class GitFastImport {
    * @param $options
    *   Command-line options to pass to git fast-import.
    *
-   * @param $repository
-   *   The directory of the repository on which to operate.
    */
-  function fastImport($commands, $options, $repository) {
-    $command = 'git fast-import ';
-
+  function fastImport($commands, $options) {
     $options = array_merge($this->default_options, $options);
 
-    // Set the options for git fast-import
-    foreach ($options as $key => $value) {
-      // If the format is 'key' => 'value', output '--key=value', otherwise, output '--value'
-      if (is_string($key)) {
-        $command .= sprintf('--%s=%s', $key, $value);
-      } else {
-        $command .= sprintf('--%s', $value);
-      }
     if (empty($options['export-marks'])) {
       $options['export-marks'] = tempnam(sys_get_temp_dir(), 'git-marks');
     }
 
+    $command = $this->buildCommandLine($options);
     // The file descriptor array for the fast-import process. The read and write
     // specifications are from the view of git-fast-import.
     $descriptorspec = array(
@@ -222,6 +211,30 @@ class GitFastImport {
       }
     }
 
+  }
+
+  /**
+   * Build the command line string.
+   *
+   * @param $options
+   *   An array of options to pass to git-fast-import(1).
+   *
+   * @return
+   *   A string suitable for execution by proc_open and similar.
+   */
+  protected function buildCommandLine($options) {
+    $command = 'git fast-import ';
+    // Set the options for git fast-import
+    foreach ($options as $key => $value) {
+      // If the format is 'key' => 'value', output '--key=value', otherwise, output '--value'
+      if (is_string($key)) {
+        $command .= sprintf('--%s=%s', $key, $value);
+      } else {
+        $command .= sprintf('--%s', $value);
+      }
+    }
+
+    return $command;
   }
 
   /**
