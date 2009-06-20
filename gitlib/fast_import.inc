@@ -20,7 +20,7 @@ class GitFastImport {
    * Global default options. Can be overridden by default options passed to the
    * constructor or each individual invocation of fastImport().
    */
-  const DEFAULT_OPTIONS = array(
+  public static $DEFAULT_OPTIONS = array(
     'date-format' => 'raw',
     'stats'
   );
@@ -46,7 +46,7 @@ class GitFastImport {
    */
   public function __construct($path, $default_options = array()) {
     $this->path = $path;
-    $this->default_options = array_merge(DEFAULT_OPTIONS, $default_options);
+    $this->default_options = array_merge(self::DEFAULT_OPTIONS, $default_options);
   }
   /**
    * Run 'git fast-import' on the working copy with the given options.
