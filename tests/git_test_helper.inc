@@ -82,6 +82,7 @@ class GitTestHelper extends DrupalWebTestCase {
     $this->hooks['config']['src'] = $this->module_source .'/xgit/xgit-config.php';
     $this->hooks['config']['dst'] = $this->repo['xgit'] .'/xgit-config.php';
     $format = "\$xgit['drupal_path'] = '%s';\n".
+              "\$GLOBALS['xgit_debug'] = TRUE;\n".
               "\$GLOBALS['simpletest_db_prefix'] = '%s';";
 
     $this->hooks['config']['text'] = sprintf($format, $this->base_path, $GLOBALS['db_prefix']);
@@ -332,5 +333,257 @@ class GitTestHelper extends DrupalWebTestCase {
 
     $output = implode("\n", $output);
     return array($output, $retval);
+  }
+
+  /**
+   * Run 'git fast-import' on the working copy with the given options.
+   *
+   * @param $commands
+
+   *   An array of commands, each of which is a command as described in
+   *   git-fast-import(1).
+   *   The possible commands are:
+   *
+   *   - commit: Creates a new branch or updates an existing branch by creating
+   *             a new commit and updating the branch to point at the newly
+   *             created commit.
+   *
+   *   - tag: Creates an annotated tag object from an existing commit or
+   *          branch. Lightweight tags are not supported by this command, as
+   *          they are not recommended for recording meaningful points in time.
+   *
+   *   - reset: Reset an existing branch (or a new branch) to a specific
+   *            revision. This command must be used to change a branch to a
+   *            specific revision without making a commit on it.
+   *
+   *   - checkpoint: Forces fast-import to close the current packfile, generate
+   *                 its unique SHA-1 checksum and index, and start a new
+   *                 packfile. This command is optional and is not needed to
+   *                 perform an import.
+   *
+   *   - progress: Causes fast-import to echo the entire line to its own
+   *               standard output. This command is optional and is not needed
+   *               to perform an import.
+   *
+   *   The following are examples of each command, in the same order as they are
+   *   given above.
+   *
+   *   - array(
+   *       'command' => 'commit',
+   *       'ref' => 'ref/heads/master',
+   *       'mark' => 1, // Optional. Any positive integer.
+   *       'author' => array(
+   *         'name' => "name",
+   *         'email' => "name@example.com",
+   *         'when' => array(
+   *           'time' => 1245480094,
+   *           'offutc' => '+0000', // The offset of the timezone from UTC
+   *         )
+   *       ),
+   *       'committer' => array(
+   *         'name' => "name",
+   *         'email' => "name@example.com",
+   *         'when' => array(
+   *           'time' => 1245480094,
+   *           'offutc' => '+0000', // The offset of the timezone from UTC
+   *         )
+   *       ),
+   *       'message' => "commit message",
+   *       'from' => 'commitish', // Optional
+   *       // Zero or more
+   *       'merge' => array(
+   *         'commitish1',
+   *         'commitish2',
+   *       )
+   *
+   *       'operations' => array(
+   *         array(
+   *           'operation' => 'filemodify',
+   *           'mode' => 'normal', // 'executable', 'symlink', 'gitlink'
+   *           'data' => 'These are the contents of the file', // Raw contents of the file.
+   *           'path' => 'path/to/file.txt',
+   *         ),
+   *
+   *         array(
+   *           'operation' => 'filedelete',
+   *           'path' => 'path/to/delete.txt',
+   *         ),
+   *
+   *         array(
+   *           'operation' => 'filecopy',
+   *           'src' => 'path/to/source.txt',
+   *           'dst' => 'path/to/destination.txt',
+   *         ),
+   *
+   *         array(
+   *           'operation' => 'filerename',
+   *           'src' => 'path/to/source.txt',
+   *           'dst' => 'path/to/destination.txt',
+   *         ),
+   *
+   *         'filedeleteall',
+   *       )
+   *     )
+   *
+   *   - array(
+   *       'command' => 'tag',
+   *       'name' => 'refs/tags/name'
+   *       'from' => 'commitish',
+   *       'tagger' => array(
+   *         'name' => 'name',
+   *         'email' => 'name@example.com',
+   *         'when' => array(
+   *           'time' => 1245480094,
+   *           'offutc' => '+0000',
+   *         ),
+   *       )
+   *     )
+   *
+   *   - array(
+   *       'command' => 'reset',
+   *       'ref' => 'refs/heads/refname',
+   *       'from' => 'commitish', // Optional
+   *     )
+   *
+   *   - array(
+   *       'command' => 'checkpoint',
+   *     )
+   *
+   *   - array(
+   *       'command' => 'progress',
+   *       'message' => 'Progress message',
+   *     )
+   *
+   * @param $options
+   *   Command-line options to pass to git fast-import.
+   */
+  function fastImport($commands, $options) {
+    $command = 'git fast-import ';
+
+    $default_options = array(
+      'date-format' => 'raw',
+      'stats'
+    );
+    $options = array_merge($default_options, $options);
+
+    // Set the options for git fast-import
+    foreach ($options as $key => $value) {
+      // If the format is 'key' => 'value', output '--key=value', otherwise, output '--value'
+      if (is_string($key)) {
+        $command .= sprintf('--%s=%s', $key, $value);
+      } else {
+        $command .= sprintf('--%s', $value);
+      }
+    }
+
+    // The file descriptor array for the fast-import process. The read and write
+    // specifications are from the view of git-fast-import.
+    $descriptorspec = array(
+      0 => array("pipe", "r"), // stdin
+      1 => array("pipe", "w"), // stdout
+      2 => array("pipe", "w"), // stderr
+    );
+
+    $proc = proc_open($command, $descriptorspec, $pipes);
+    if (!is_resource($proc)) {
+      throw new Exception('Failed to open git process.');
+    }
+
+    $proc_in = $pipes[0];
+    $proc_out = $pipes[1];
+    $proc_err = $pipes[2];
+    foreach ($commands as $command) {
+      $cmd_type = $this->checkAndGet($command, 'command');
+      $funcname = 'handle_'. $cmd_type .'_command';
+      switch ($cmd_type) {
+        case 'commit':
+        case 'tag':
+        case 'reset':
+        case 'checkpoint':
+        case 'progress':
+          fwrite($proc_in, call_user_func(array($this, $funcname), $command));
+        break;
+        default:
+          throw new Exception("Unknown command type: ". $command['command']);
+      }
+    }
+
+  }
+
+  /**
+   * Check for the existence of $key within $command and return the value if it
+   * exists. Throw an exception if it does not exist.
+   *
+   * @param $command
+   *   An array (usually a command for fastImport() ) to check.
+   *
+   * @param $key
+   *   The key to check and get from $command.
+   *
+   * @param $required
+   *   Whether or not the parameter is required to exist. Defaults to TRUE.
+   *
+   * @return
+   *   The value of $command['key']
+   */
+  protected function checkAndGet($command, $key, $required=TRUE) {
+    if (!isset($command[$key]) and $required) {
+      throw new Exception("Expected key '$key' does not exist within command.");
+    }
+    return $command[$key];
+  }
+
+  /**
+   * Check and return the author (or committer or tagger) from the given
+   * array. If any of the parameters is invalid, throws an exception.
+   *
+   * @param $author
+   *   An array which should contain author, committer, or tagger information as
+   *   described in fastImport.
+   *
+   * @param $required
+   *   Whether or not this author specification is required to exist.
+   *
+   * @return
+   *   An author array which has been checked for correctness.
+   */
+  protected function checkAndGetAuthor($author, $required=TRUE) {
+    if (empty($author) and !$required) {
+      return array();
+    } elseif (empty($author)) {
+      throw new Exception('Expected author specification, but none given.');
+    }
+    $this->checkAndGet($author, 'when', $required);
+    $author = array(
+      'name'  => $this->checkAndGet($author, 'name');
+      'email' => $this->checkAndGet($author, 'email');
+      'when'  => array(
+        'time'   => $this->checkAndGet($author['when'], 'time'),
+        'offutc' => $this->checkAndGet($author['when'], 'offutc'),
+      )
+    );
+  }
+
+  /**
+   * Handle a 'commit' command for fastImport().
+   *
+   * @param $command
+   *   The commit command to handle.
+   *
+   * @return
+   *   The string appropriate for 'git-fast-import' produced from the command.
+   */
+  function handle_commit_command($command) {
+    $result    = '';
+    $ref       = $this->checkAndGet($command, 'ref');
+    $mark      = $command['mark'];
+    $author    = $this->checkAndGetAuthor($command['author'], FALSE);
+    $committer = $this->checkAndGetAuthor($command['committer']);
+    $message   = $this->checkAndGet($command, 'message');
+    $from      = $this->checkAndGet($command, 'from', FALSE);
+    $merge     = $this->checkAndGet($command, 'merge', FALSE);
+    $ops       = $this->checkAndGet($command, 'operations');
+
+    $result .= sprintf("commit %\n");
   }
 }
