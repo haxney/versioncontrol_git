@@ -186,6 +186,8 @@ class GitFastImport {
       } else {
         $command .= sprintf('--%s', $value);
       }
+    if (empty($options['export-marks'])) {
+      $options['export-marks'] = tempnam(sys_get_temp_dir(), 'git-marks');
     }
 
     // The file descriptor array for the fast-import process. The read and write
