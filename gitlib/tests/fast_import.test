@@ -27,16 +27,16 @@ class GitLibFastImportTestCase extends DrupalWebTestCase {
     $tempfile = tempnam('','');
     if (file_exists($tempfile)) { unlink($tempfile); }
     mkdir($tempfile);
-    $this->tempdir = $tempfile;
+    $this->repo_dir = $tempfile;
 
-    $command = sprintf('GIT_DIR=%s git init', escapeshellarg($this->tempdir));
+    $command = sprintf('GIT_DIR=%s git init', escapeshellarg($this->repo_dir));
     shell_exec($command);
 
-    $this->fast = new GitFastImport($this->tempdir);
+    $this->fast = new GitFastImport($this->repo_dir);
   }
 
   function tearDown() {
-    recursive_remove_directory($this->tempdir);
+    recursive_remove_directory($this->repo_dir);
     parent::tearDown();
   }
 
