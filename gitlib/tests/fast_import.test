@@ -471,6 +471,59 @@ class GitLibFastImportTestCase extends DrupalWebTestCase {
     );
     $this->assertObjectStats($stderr, 'marks', $counts, $group);
   }
+
+  /**
+   * Test the 'commit' command.
+   */
+  function testCommitCommand() {
+    $group    = t('commit command');
+    $options  = array();
+    $name     = $this->randomName();
+    $time     = rand(0, time());
+    $email    = sprintf('%s@%s.com', $this->randomName(), $this->randomName());
+    $message  = $this->randomName();
+    $contents = $this->randomName();
+    $path     = $this->randomName();
+    $mark     = rand();
+
+    // Create a simple sample commit.
+    $commands[] = array(
+      'command' => 'commit',
+      'ref' => 'master',
+      'mark' => $mark,
+      'committer' => array(
+        'name' => $name,
+        'email' => $email,
+        'when' => array(
+          'time' => $time,
+          'offutc' => '+0000',
+        ),
+      ),
+      'message' => $message,
+      'operations' => array(
+        array(
+          'operation' => 'filemodify',
+          'mode' => 'normal',
+          'data' => $contents,
+          'path' => $path,
+        ),
+      ),
+    );
+    list($retval, $marks, $stdout, $stderr) = $this->fast->fastImport($commands, $options);
+
+    $this->assertCommandSuccess($retval, $group);
+    $counts = array(
+      'created' => 1,
+      'duplicates' => 0,
+    );
+    $this->assertObjectStats($stderr, 'commits', $counts, $group);
+
+    $counts = array(
+      'unique' => 1,
+    );
+    $this->assertObjectStats($stderr, 'marks', $counts, $group);
+    $this->assertMarkCommit($marks, $mark, $commands[0], $group);
+  }
 }
 // ------------ lixlpixel recursive PHP functions -------------
 // recursive_remove_directory( directory to delete, empty )
