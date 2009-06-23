@@ -104,6 +104,133 @@ class GitLibFastImportTestCase extends DrupalWebTestCase {
   }
 
   /**
+   * Helper to check for the existence and value of a particular mark pointing
+   * to a blob.
+   *
+   * @param $marks
+   *   The marks return value from GitFastImport::fastImport().
+   *
+   * @param $mark_id
+   *   The id number of the mark to find.
+   *
+   * @param $mark_data
+   *   The expected data of the mark. This must exactly match the data contained
+   *   in the mark for the assertion to pass.
+   *
+   * @param $group
+   *   The group to set for the SimpleTest assertion.
+   */
+  function assertMarkBlob($marks, $mark_id, $mark_data, $group) {
+    $this->assertNotNull(
+      $marks[$mark_id],
+      t('Mark exists in output.'),
+      $group
+    );
+
+    $type = shell_exec(sprintf('GIT_DIR=%s git cat-file -t %s',
+              escapeshellarg($this->repo_dir),
+              $marks[$mark_id]));
+    $this->assertTrue(
+      is_int(strpos($type, 'blob')),
+      t('Mark is of type "blob".'),
+      $group
+    );
+
+    $data = shell_exec(sprintf('GIT_DIR=%s git cat-file -p %s',
+              escapeshellarg($this->repo_dir),
+              $marks[$mark_id]));
+    $this->assertIdentical(
+      $data,
+      $mark_data,
+      t('Expected data matches recorded mark'),
+      $group
+    );
+  }
+
+  /**
+   * Helper to check for the creation of a certain number of objects as a result
+   * of a fast-import.
+   *
+   * @param $stderr
+   *   The stderr output from GitFastImport::fastImport().
+   *
+   * @param $type
+   *   The type of object to check. One of 'blobs', 'trees', 'commits', 'tags',
+   *   'marks'.
+   *
+   * @param $counts
+   *   The expected number of objects as an array. The form is:
+   *
+   *     array(
+   *       'created' => 1,
+   *       'duplicates' => 0,
+   *     )
+   *
+   *   If $type is set to 'marks', then the expected format is:
+   *
+   *     array(
+   *       'created' => 1024,
+   *       'unique' => 1
+   *     )
+   *
+   *   If an option is omitted, it will not be checked.
+   *
+   * @param $group
+   *   The group to set for the SimpleTest assertion.
+   */
+  function assertObjectStats($stderr, $type, $counts, $group) {
+    $pattern = '/ {6}%s {0,3}: +(\d+) \( +(\d+) (?:duplicates|unique)/';
+    $pattern = sprintf($pattern, preg_quote($type));
+    $this->assertTrue(
+      preg_match($pattern, $stderr, $matches),
+      t('Type found in statistics.'),
+      $group
+    );
+    $created = $matches[1];
+    $duplicates = $unique = $matches[2];
+
+    if (isset($counts['created'])) {
+      $this->assertIdentical(
+        $created,
+        (string) $counts['created'],
+        t('Number of created objects matches expectation.'),
+        $group
+      );
+    }
+
+    switch ($type) {
+      case 'blobs':
+      case 'trees':
+      case 'commits':
+      case 'tags':
+        if (isset($counts['duplicates'])) {
+          $this->assertIdentical(
+            $duplicates,
+            $counts['duplicates'],
+            t('Number of duplicate objects matches expectation.'),
+            $group
+          );
+        }
+      break;
+      case 'marks':
+        if (isset($counts['unique'])) {
+          $this->assertIdentical(
+            $unique,
+            $counts['unique'],
+            t('Number of unique marks matches expectation.'),
+            $group
+          );
+        }
+      break;
+      default:
+        $this->fail(
+          t('Wrong type given to assertObjectStats().'),
+          $group
+        );
+    }
+  }
+
+  /**
    * Test the functionality of GitFastImport::buildCommandLine().
    */
   public function testBuildCommandLine() {
