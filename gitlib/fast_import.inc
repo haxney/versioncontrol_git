@@ -394,9 +394,7 @@ class GitFastImport {
     $ops       = $this->checkAndGet($command, 'operations', FALSE);
 
     $output .= sprintf("commit %s\n", $ref);
-    if (!empty($mark)) {
-      $output .= sprintf("mark :%d\n", $mark);
-    }
+    $output .= $this->handlMark($mark);
     if (!empty($author)) {
       $output .= $this->handleAuthor('author', $author);
     }
