@@ -148,6 +148,114 @@ class GitLibFastImportTestCase extends DrupalWebTestCase {
   }
 
   /**
+   * Perform an assertIdentical(), but only if $expected is not NULL.
+   */
+  function assertIfSet($actual, $expected, $message, $group) {
+    if (isset($expected)) {
+      $this->assertIdentical(
+        $actual,
+        $expected,
+        t($message. ' matches expected.'),
+        $group
+      );
+    }
+  }
+
+
+  /**
+   * Helper to check for the existence and value of a particular mark pointing
+   * to a commit. Does not completely check all aspects of a commit, but just
+   * enough to ensure that the commit is there and is consistent.
+   *
+   * @param $marks
+   *   The marks output parameter from GitFastImport::fastImport().
+   *
+   * @param $mark_id
+   *   The id of the mark to check.
+   *
+   * @param $mark_data
+   *   An array containing data about the commit. Any array elements not
+   *   included will not be checked. The array is of the form:
+   *
+   *   array(
+   *     'tree' => 'SHA-1',
+   *     'author' => array(
+   *       'name' => "name",
+   *       'email' => "name@example.com",
+   *       'when' => array(
+   *         'time' => 1245480094,
+   *         'offutc' => '+0000',
+   *       ),
+   *     ),
+   *     'committer' => array(
+   *       'name' => "name",
+   *       'email' => "name@example.com",
+   *       'when' => array(
+   *         'time' => 1245480094,
+   *         'offutc' => '+0000',
+   *       ),
+   *     ),
+   *     'message' => 'commit message',
+   *   )
+   *
+   * @param $group
+   *   The group to set for the SimpleTest assertion.
+   */
+  function assertMarkCommit($marks, $mark_id, $mark_data, $group) {
+    $this->assertNotNull(
+      $marks[$mark_id],
+      t('Mark exists in output.'),
+      $group
+    );
+
+    $type = shell_exec(sprintf('GIT_DIR=%s git cat-file -t %s',
+              escapeshellarg($this->repo_dir),
+              $marks[$mark_id]));
+    $this->assertTrue(
+      is_int(strpos($type, 'commit')),
+      t('Mark is of type "commit".'),
+      $group
+    );
+
+    $data = shell_exec(sprintf('GIT_DIR=%s git cat-file commit %s',
+              escapeshellarg($this->repo_dir),
+              $marks[$mark_id]));
+
+    // Ack, aughh, hurk! Matches the output of 'git cat-file commit <SHA-1>'
+    $pattern = "/tree ([0-9a-f]{40})\n".
+               "author (.+) <(.+)> (\d+) ([-+]\d{4})\n".
+               "committer (.+) <(.+)> (\d+) ([-+]\d{4})\n".
+               "\n(.*)\n/"; // Commit message
+    $this->assertTrue(
+      preg_match($pattern, $data, $matches),
+      t('Commit message is printed in the correct format.'),
+      $group
+    );
+    $tree = $matches[1];
+    $author_name = $matches[2];
+    $author_email = $matches[3];
+    $author_date = $matches[4];
+    $author_tz = $matches[5];
+    $committer_name = $matches[6];
+    $committer_email = $matches[7];
+    $committer_date = $matches[8];
+    $commtter_tz = $matches[9];
+    $commit_message = $matches[10];
+
+    // Check each of the attributes.
+    $this->assertIfSet($tree, $match_data['tree'], 'Tree SHA-1', $group);
+    $this->assertIfSet($author_name, $match_data['author']['name'], 'Author name', $group);
+    $this->assertIfSet($author_email, $match_data['author']['email'], 'Author email', $group);
+    $this->assertIfSet($author_date, $match_data['author']['when']['time'], 'Author date', $group);
+    $this->assertIfSet($author_tz, $match_data['author']['when']['offutc'], 'Author timezone', $group);
+    $this->assertIfSet($committer_name, $match_data['committer']['name'], 'Committer name', $group);
+    $this->assertIfSet($committer_email, $match_data['committer']['email'], 'Committer email', $group);
+    $this->assertIfSet($committer_date, $match_data['committer']['when']['time'], 'Committer date', $group);
+    $this->assertIfSet($committer_tz, $match_data['committer']['when']['offutc'], 'Committer timezone', $group);
+    $this->assertIfSet($commit_message, $match_data['message'], 'Commit message', $group);
+  }
+
+  /**
    * Helper to check for the creation of a certain number of objects as a result
    * of a fast-import.
    *
