@@ -41,6 +41,48 @@ class GitLibFastImportTestCase extends DrupalWebTestCase {
   }
 
   /**
+   * Helper for asserting the success of a fast-import execution.
+   *
+   * @param $retval
+   *   The return value from fastImport().
+   *
+   * @param $group
+   *   The group to set for the SimpleTest assertion.
+   *
+   * @return
+   *   None.
+   */
+  function assertCommandSuccess($retval, $group) {
+    $this->assertEqual(
+      $retval,
+      0,
+      t('Command completes successfully.'),
+      $group
+    );
+  }
+
+  /**
+   * Helper for asserting that no marks were created in the execution of
+   * fast-import.
+   *
+   * @param $marks
+   *   The $marks return value from fastImport().
+   *
+   * @param $group
+   *   The group to set for the SimpleTest assertion.
+   *
+   * @return
+   *   None.
+   */
+  function assertNoMarks($marks, $group) {
+    $this->assertFalse(
+      $marks,
+      t('Command produced no marks.'),
+      $group
+    );
+  }
+
+  /**
    * Test the functionality of GitFastImport::buildCommandLine().
    */
   public function testBuildCommandLine() {
@@ -116,6 +158,7 @@ class GitLibFastImportTestCase extends DrupalWebTestCase {
    * Test the 'progress' command of fast-import.
    */
   function testProgressCommand() {
+    $group = t('progress command')
     // Generate some messages
     $messages[] = $this->randomName();
     $messages[] = $this->randomName();
@@ -132,33 +175,31 @@ class GitLibFastImportTestCase extends DrupalWebTestCase {
     $options = array();
     list($retval, $marks, $stdout, $stderr) = $this->fast->fastImport($commands, $options);
 
-    $this->assertEqual(
-      $retval,
-      0,
-      t('Empty import completes successfully.'),
-      t('progress command')
-    );
-
-    $this->assertFalse(
-      $marks,
-      t('Empty import produces no marks.'),
-      t('progress command')
-    );
-
-    $this->assertFalse(
-      $marks,
-      t('Empty import produces no marks.'),
-      t('Empty command')
-    );
+    $this->assertCommandSuccess($retval, $group);
+    $this->assertNoMarks($marks, $group);
 
     foreach($messages as $message) {
       $this->assertTrue(
         is_int(strpos($stdout, 'progress '. $message)),
         t('Make sure assigned message appears in stdout.'),
-        t('progress command')
-
+        $group
       );
     }
+  }
+
+  /**
+   * Test the 'checkpoint' command.
+   */
+  function testCheckpointCommand() {
+    $group = t('checkpoint command');
+    $commands[] = array(
+      'command' => 'checkpoint',
+    );
+    $options = array();
+    list($retval, $marks, $stdout, $stderr) = $this->fast->fastImport($commands, $options);
+
+    $this->assertCommandSuccess($retval, $group);
+    $this->assertNoMarks($marks, $group);
   }
 
 }
