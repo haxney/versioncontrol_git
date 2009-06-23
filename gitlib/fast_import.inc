@@ -202,7 +202,7 @@ class GitFastImport {
       2 => array("pipe", "w"), // stderr
     );
 
-    $proc = proc_open($command, $descriptorspec, $pipes, $repository);
+    $proc = proc_open($command, $descriptorspec, $pipes, $this->path);
     if (!is_resource($proc)) {
       throw new Exception('Failed to open git process.');
     }
@@ -218,20 +218,29 @@ class GitFastImport {
         case 'tag':
         case 'reset':
         case 'checkpoint':
-        case 'progress':
+        case 'progress': {
           fwrite($proc_in, call_user_func(array($this, $funcname), $command));
+          fflush($proc_in);
+        }
         break;
         default:
           throw new Exception("Unknown command type: ". $command['command']);
       }
     }
-    $ret_val = fclose($proc);
+    fclose($proc_in);
+    $stdout_result = stream_get_contents($proc_out);
+    $stderr_result = stream_get_contents($proc_err);
+
+
+    fclose($proc_out);
+    fclose($proc_err);
+    $ret_val = proc_close($proc);
     $marks = self::readMarksFile($options['export-marks']);
 
     // Clean up temporary file.
     unlink($options['export-marks']);
 
-    return array($ret_val, $marks);
+    return array($ret_val, $marks, $stdout_result, $stderr_result);
   }
 
   /**
