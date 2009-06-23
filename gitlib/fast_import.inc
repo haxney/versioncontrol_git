@@ -394,7 +394,7 @@ class GitFastImport {
     $ops       = $this->checkAndGet($command, 'operations', FALSE);
 
     $output .= sprintf("commit %s\n", $ref);
-    $output .= $this->handlMark($mark);
+    $output .= $this->handleMark($mark);
     if (!empty($author)) {
       $output .= $this->handleAuthor('author', $author);
     }
@@ -407,7 +407,7 @@ class GitFastImport {
       $output .= sprintf("merge %s\n", $id);
     }
     foreach ($ops as $op) {
-      $output .= handleOperation($op);
+      $output .= $this->handleOperation($op);
     }
     // not necessary in newer versions of git.
     $output .= "\n";

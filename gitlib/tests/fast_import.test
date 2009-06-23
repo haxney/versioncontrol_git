@@ -394,7 +394,7 @@ class GitLibFastImportTestCase extends DrupalWebTestCase {
    * Test the 'progress' command of fast-import.
    */
   function testProgressCommand() {
-    $group = t('progress command')
+    $group = t('progress command');
     // Generate some messages
     $messages[] = $this->randomName();
     $messages[] = $this->randomName();
@@ -450,12 +450,12 @@ class GitLibFastImportTestCase extends DrupalWebTestCase {
     $commands[] = array(
       'command' => 'blob',
       'mark' => $mark_id,
-      'data' => $data_marked;
+      'data' => $data_marked,
     );
 
     $commands[] = array(
       'command' => 'blob',
-      'data' => $data_unmarked;
+      'data' => $data_unmarked,
     );
     list($retval, $marks, $stdout, $stderr) = $this->fast->fastImport($commands, $options);
 
