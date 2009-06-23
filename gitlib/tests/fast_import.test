@@ -95,7 +95,7 @@ class GitLibFastImportTestCase extends DrupalWebTestCase {
    * @return
    *   None.
    */
-  function assertStatistics($stderr, $group) {
+  function assertStatisticsExists($stderr, $group) {
     $this->assertTrue(
       is_int(strpos($stderr, 'git-fast-import statistics:')),
       t('Command produces statistics.'),
@@ -152,7 +152,7 @@ class GitLibFastImportTestCase extends DrupalWebTestCase {
     list($retval, $marks, $stdout, $stderr) = $this->fast->fastImport(array(), array());
     $this->assertCommandSuccess($retval, $group);
     $this->assertNoMarks($marks, $group);
-    $this->assertStatistics($stderr, $group);
+    $this->assertStatisticsExists($stderr, $group);
   }
 
   /**
