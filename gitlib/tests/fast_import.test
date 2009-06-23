@@ -111,6 +111,56 @@ class GitLibFastImportTestCase extends DrupalWebTestCase {
       t('Empty command')
     );
   }
+
+  /**
+   * Test the 'progress' command of fast-import.
+   */
+  function testProgressCommand() {
+    // Generate some messages
+    $messages[] = $this->randomName();
+    $messages[] = $this->randomName();
+    $messages[] = $this->randomName();
+    $messages[] = $this->randomName();
+
+    foreach ($messages as $message) {
+      $commands[] = array(
+        'command' => 'progress',
+        'message' => $message,
+      );
+    }
+
+    $options = array();
+    list($retval, $marks, $stdout, $stderr) = $this->fast->fastImport($commands, $options);
+
+    $this->assertEqual(
+      $retval,
+      0,
+      t('Empty import completes successfully.'),
+      t('progress command')
+    );
+
+    $this->assertFalse(
+      $marks,
+      t('Empty import produces no marks.'),
+      t('progress command')
+    );
+
+    $this->assertFalse(
+      $marks,
+      t('Empty import produces no marks.'),
+      t('Empty command')
+    );
+
+    foreach($messages as $message) {
+      $this->assertTrue(
+        is_int(strpos($stdout, 'progress '. $message)),
+        t('Make sure assigned message appears in stdout.'),
+        t('progress command')
+
+      );
+    }
+  }
+
 }
 // ------------ lixlpixel recursive PHP functions -------------
 // recursive_remove_directory( directory to delete, empty )
