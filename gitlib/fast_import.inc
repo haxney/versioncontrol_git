@@ -90,9 +90,9 @@ class GitFastImport {
    *
    *   - array(
    *       'command' => 'commit',
-   *       'ref' => 'ref/heads/master',
+   *       'ref' => 'master',
    *       'mark' => 1, // Optional. Any positive integer.
-   *       'author' => array(
+   *       'author' => array( // Optional.
    *         'name' => "name",
    *         'email' => "name@example.com",
    *         'when' => array(
