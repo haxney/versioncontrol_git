@@ -167,6 +167,12 @@ class GitFastImport {
    *     )
    *
    *   - array(
+   *       'command' => 'blob',
+   *       'mark' => 3, // Any positive number, optional.
+   *       'data' => 'the content of the blob',
+   *     )
+   *
+   *   - array(
    *       'command' => 'checkpoint',
    *     )
    *
@@ -217,6 +223,7 @@ class GitFastImport {
         case 'commit':
         case 'tag':
         case 'reset':
+        case 'blob':
         case 'checkpoint':
         case 'progress': {
           fwrite($proc_in, call_user_func(array($this, $funcname), $command));
@@ -345,6 +352,28 @@ class GitFastImport {
   }
 
   /**
+   * Create the output for a 'mark' specification, if it exists. This method is
+   * intended to be called with the output of $this->checkAndGet($array, 'mark',
+   * FALSE), so if the mark does not actually exist, this command will return
+   * the empty string.
+   *
+   * @param $mark
+   *   Either NULL or a positive integer, which will be the value of the mark
+   *   command.
+   *
+   * @return
+   *   Either the empty string (if no mark was given as input) or the
+   *   git-fast-import(1) representation of the mark.
+   */
+  function handleMark($mark) {
+    $output = '';
+    if (!empty($mark)) {
+      $output .= sprintf("mark :%d\n", $mark);
+    }
+    return $output;
+  }
+
+  /**
    * Handle a 'commit' command for fastImport().
    *
    * @param $command
@@ -429,6 +458,23 @@ class GitFastImport {
     return $output;
   }
 
+  /**
+   * Handle a 'blob' operation to create a blob.
+   *
+   * @param $command
+   *   A 'blob' command array as described in fastImport().
+   *
+   * @return
+   *   The git-fast-import(1) representation of $command.
+   */
+  function handle_blob_command($command) {
+    $mark = $this->checkAndGet($command, 'mark', FALSE);
+    $data = $this->checkAndGet($command, 'data');
+    $output = "blob\n";
+    $output .= $this->handleMark($mark);
+    $output .= $this->handleData($data);
+    return $output;
+  }
 
   /**
    * Handle a 'checkpoint' operation.
