@@ -83,6 +83,27 @@ class GitLibFastImportTestCase extends DrupalWebTestCase {
   }
 
   /**
+   * Helper for asserting that the command produced statistics (which will
+   * happen on a successful run).
+   *
+   * @param $stderr
+   *   The stderr result from GitFastImport::fastImport().
+   *
+   * @param $group
+   *   The group to set for the SimpleTest assertion.
+   *
+   * @return
+   *   None.
+   */
+  function assertStatistics($stderr, $group) {
+    $this->assertTrue(
+      is_int(strpos($stderr, 'git-fast-import statistics:')),
+      t('Command produces statistics.'),
+      $group
+    );
+  }
+
+  /**
    * Test the functionality of GitFastImport::buildCommandLine().
    */
   public function testBuildCommandLine() {
@@ -127,31 +148,11 @@ class GitLibFastImportTestCase extends DrupalWebTestCase {
    * produce any commits.
    */
   function testEmptyCommand() {
+    $group = t('Empty command');
     list($retval, $marks, $stdout, $stderr) = $this->fast->fastImport(array(), array());
-    $this->assertEqual(
-      $retval,
-      0,
-      t('Empty import completes successfully.'),
-      t('Empty command')
-    );
-
-    $this->assertFalse(
-      $marks,
-      t('Empty import produces no marks.'),
-      t('Empty command')
-    );
-
-    $this->assertTrue(
-      is_int(strpos($stderr, 'git-fast-import statistics:')),
-      t('Empty import produces statistics.'),
-      t('Empty command')
-    );
-
-    $this->assertFalse(
-      $stdout,
-      t('No output on stdout.'),
-      t('Empty command')
-    );
+    $this->assertCommandSuccess($retval, $group);
+    $this->assertNoMarks($marks, $group);
+    $this->assertStatistics($stderr, $group);
   }
 
   /**
@@ -201,7 +202,6 @@ class GitLibFastImportTestCase extends DrupalWebTestCase {
     $this->assertCommandSuccess($retval, $group);
     $this->assertNoMarks($marks, $group);
   }
-
 }
 // ------------ lixlpixel recursive PHP functions -------------
 // recursive_remove_directory( directory to delete, empty )
