@@ -460,7 +460,7 @@ class GitLibFastImportTestCase extends DrupalWebTestCase {
     list($retval, $marks, $stdout, $stderr) = $this->fast->fastImport($commands, $options);
 
     $this->assertCommandSuccess($retval, $group);
-    $this->assertMark($marks, $mark_id, $data_marked, $group);
+    $this->assertMarkBlob($marks, $mark_id, $data_marked, $group);
     $counts = array(
       'created' => 2,
       'duplicates' => 0,
