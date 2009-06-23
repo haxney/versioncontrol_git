@@ -1,4 +1,15 @@
 <?php
+// $Id$
+
+/**
+ * @file
+ * Test the fast-import bridge for PHP.
+ *
+ * Check a number of conditions to ensure the proper function of the
+ * GitFastImport class of gitlib.
+ *
+ * Copyright 2009 by Daniel Hackney ("dhax", http://drupal.org/user/384635)
+ */
 
 require_once(dirname(__FILE__) . '/../git.php');
 class GitLibFastImportTestCase extends DrupalWebTestCase {
