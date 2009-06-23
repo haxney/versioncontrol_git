@@ -31,7 +31,7 @@ AUTHORS
 -------
 Jimmy Berry ("boombatower", http://drupal.org/user/214218 ) (orginal version for Drupal 5)
 Cornelius Riemenschneider ("CorniI", http://drupal.org/user/136353 )
-Daniel Hackney ("chrono325", http://drupal.org/user/384635 )
+Daniel Hackney ("dhax", http://drupal.org/user/384635 )
 
 ROADMAP
 ------

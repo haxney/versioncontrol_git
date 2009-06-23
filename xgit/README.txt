@@ -51,4 +51,4 @@ xgit-update.php
 AUTHOR
 ------
 Jimmy Berry ("boombatower", http://drupal.org/user/214218)
-Daniel Hackney ("chrono325", http://drupal.org/user/214218)
+Daniel Hackney ("dhax", http://drupal.org/user/214218)

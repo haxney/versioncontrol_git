@@ -9,7 +9,7 @@
  * remote repository. A exit code of zero allows the update to occur, while any
  * non-zero exit code will prevent the update from occurring.
  *
- * Copyright 2009 by Daniel Hackney ('chrono325', http://drupal.org/user/384635)
+ * Copyright 2009 by Daniel Hackney ("dhax", http://drupal.org/user/384635)
  */
 
 define('VERSIONCONTROL_GIT_ERROR_WRONG_ARGC', 1);

@@ -6,7 +6,7 @@
  * Configuration variables and bootstrapping code for all Git hook scripts.
  *
  * Copyright 2008 by Jimmy Berry ("boombatower", http://drupal.org/user/214218)
- * Copyright 2009 by Daniel Hackney ('chrono325', http://drupal.org/user/384635)
+ * Copyright 2009 by Daniel Hackney ('dhax', http://drupal.org/user/384635)
  */
 
 // ------------------------------------------------------------

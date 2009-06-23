@@ -8,7 +8,7 @@
  * Simplifies interacting with git-fast-import(1) by allowing the creation of
  * fast-import specifications from within PHP.
  *
- * Copyright 2009 by Daniel Hackney ("chrono325", http://drupal.org/user/384635)
+ * Copyright 2009 by Daniel Hackney ("dhax", http://drupal.org/user/384635)
  */
 
 /**

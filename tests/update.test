@@ -5,7 +5,7 @@
  * @file
  * Test the xgit-update hook.
  *
- * Copyright 2009 by Daniel Hackney ("chrono325", http://drupal.org/user/384635)
+ * Copyright 2009 by Daniel Hackney ("dhax", http://drupal.org/user/384635)
  */
 
 require_once(drupal_get_path('module', 'versioncontrol_git') .'/tests/git_test_helper.inc');
