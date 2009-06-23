@@ -68,6 +68,38 @@ class GitLibFastImportTestCase extends DrupalWebTestCase {
       'buildCommandLine()'
     );
   }
+
+  /**
+   * Test running fast-import with no input. Requires a repository, but will not
+   * produce any commits.
+   */
+  function testEmptyCommand() {
+    list($retval, $marks, $stdout, $stderr) = $this->fast->fastImport(array(), array());
+    $this->assertEqual(
+      $retval,
+      0,
+      t('Empty import completes successfully.'),
+      t('Empty command')
+    );
+
+    $this->assertFalse(
+      $marks,
+      t('Empty import produces no marks.'),
+      t('Empty command')
+    );
+
+    $this->assertTrue(
+      is_int(strpos($stderr, 'git-fast-import statistics:')),
+      t('Empty import produces statistics.'),
+      t('Empty command')
+    );
+
+    $this->assertFalse(
+      $stdout,
+      t('No output on stdout.'),
+      t('Empty command')
+    );
+  }
 }
 // ------------ lixlpixel recursive PHP functions -------------
 // recursive_remove_directory( directory to delete, empty )
