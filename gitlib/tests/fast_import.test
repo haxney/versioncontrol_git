@@ -329,6 +329,40 @@ class GitLibFastImportTestCase extends DrupalWebTestCase {
     $this->assertCommandSuccess($retval, $group);
     $this->assertNoMarks($marks, $group);
   }
+
+  /**
+   * Test the 'blob' command.
+   */
+  function testBlobCommand() {
+    $group = t('blob command');
+    $data_marked = $this->randomName();
+    $data_unmarked = $this->randomName();
+    $mark_id = 1;
+    $options = array();
+    $commands[] = array(
+      'command' => 'blob',
+      'mark' => $mark_id,
+      'data' => $data_marked;
+    );
+
+    $commands[] = array(
+      'command' => 'blob',
+      'data' => $data_unmarked;
+    );
+    list($retval, $marks, $stdout, $stderr) = $this->fast->fastImport($commands, $options);
+
+    $this->assertCommandSuccess($retval, $group);
+    $this->assertMark($marks, $mark_id, $data_marked, $group);
+    $counts = array(
+      'created' => 2,
+      'duplicates' => 0,
+    );
+    $this->assertObjectStats($stderr, 'blobs', $counts, $group);
+    $counts = array(
+      'unique' => 1,
+    );
+    $this->assertObjectStats($stderr, 'marks', $counts, $group);
+  }
 }
 // ------------ lixlpixel recursive PHP functions -------------
 // recursive_remove_directory( directory to delete, empty )
