@@ -136,7 +136,7 @@ class GitLibFastImportTestCase extends DrupalWebTestCase {
       $group
     );
 
-    $data = shell_exec(sprintf('GIT_DIR=%s git cat-file -p %s',
+    $data = shell_exec(sprintf('GIT_DIR=%s git cat-file blob %s',
               escapeshellarg($this->repo_dir),
               $marks[$mark_id]));
     $this->assertIdentical(
