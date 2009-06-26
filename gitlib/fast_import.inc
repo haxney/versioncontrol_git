@@ -343,15 +343,16 @@ class GitFastImport {
     } elseif (empty($author)) {
       throw new Exception('Expected author specification, but none given.');
     }
-    $this->checkAndGet($author, 'when', $required);
+    $when = $this->checkAndGet($author, 'when');
     $author = array(
       'name'  => $this->checkAndGet($author, 'name'),
       'email' => $this->checkAndGet($author, 'email'),
       'when'  => array(
-        'time'   => $this->checkAndGet($author['when'], 'time'),
-        'offutc' => $this->checkAndGet($author['when'], 'offutc'),
+        'time'   => $this->checkAndGet($when, 'time'),
+        'offutc' => $this->checkAndGet($when, 'offutc'),
       )
     );
+    return $author;
   }
 
   /**
