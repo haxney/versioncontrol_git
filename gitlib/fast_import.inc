@@ -403,8 +403,11 @@ class GitFastImport {
     if (!empty($from)) {
       $output .= sprintf("from %s\n", $from);
     }
-    foreach ($merge as $id) {
-      $output .= sprintf("merge %s\n", $id);
+
+    if ($merge) {
+      foreach ($merge as $id) {
+        $output .= sprintf("merge %s\n", $id);
+      }
     }
     foreach ($ops as $op) {
       $output .= $this->handleOperation($op);
