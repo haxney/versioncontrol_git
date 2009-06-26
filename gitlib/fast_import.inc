@@ -292,7 +292,8 @@ class GitFastImport {
 
       // Convert the string mark id to the integer value with the leading colon
       // stripped.
-      $mark_id = intval(preg_replace('/:/', '', $split[0]));
+      preg_match('/:(?<mark>\d+)/', $split[0], $matches);
+      $mark_id = intval($matches['mark']);
       $marks[$mark_id] = $split[1];
     }
 
