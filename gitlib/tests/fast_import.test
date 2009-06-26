@@ -222,25 +222,30 @@ class GitLibFastImportTestCase extends DrupalWebTestCase {
               $marks[$mark_id]));
 
     // Ack, aughh, hurk! Matches the output of 'git cat-file commit <SHA-1>'
-    $pattern = "/tree ([0-9a-f]{40})\n".
-               "author (.+) <(.+)> (\d+) ([-+]\d{4})\n".
-               "committer (.+) <(.+)> (\d+) ([-+]\d{4})\n".
-               "\n(.*)\n/"; // Commit message
+    $pattern = "/tree (?<tree>[0-9a-f]{40})\n".
+
+               "author (?<author_name>.+) <(?<author_email>.+)> ".
+               "(?<author_date>\d+) (?<author_tz>[-+]\d{4})\n".
+
+               "committer (?<committer_name>.+) <(?<committer_email>.+)> ".
+               "(?<committer_date>\d+) (?<committer_tz>[-+]\d{4})\n".
+
+               "\n(?<message>.*)\n/";
     $this->assertTrue(
-      preg_match($pattern, $data, $matches),
+      is_int(preg_match($pattern, $data, $matches)),
       t('Commit message is printed in the correct format.'),
       $group
     );
-    $tree = $matches[1];
-    $author_name = $matches[2];
-    $author_email = $matches[3];
-    $author_date = $matches[4];
-    $author_tz = $matches[5];
-    $committer_name = $matches[6];
-    $committer_email = $matches[7];
-    $committer_date = $matches[8];
-    $commtter_tz = $matches[9];
-    $commit_message = $matches[10];
+    $tree = $matches['tree'];
+    $author_name = $matches['author_name'];
+    $author_email = $matches['author_email'];
+    $author_date = $matches['author_date'];
+    $author_tz = $matches['author_tz'];
+    $committer_name = $matches['committer_name'];
+    $committer_email = $matches['committer_email'];
+    $committer_date = $matches['committer_date'];
+    $commtter_tz = $matches['committer_tz'];
+    $commit_message = $matches['message'];
 
     // Check each of the attributes.
     $this->assertIfSet($tree, $match_data['tree'], 'Tree SHA-1', $group);
