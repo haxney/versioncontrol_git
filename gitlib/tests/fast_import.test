@@ -230,7 +230,7 @@ class GitLibFastImportTestCase extends DrupalWebTestCase {
                "committer (?<committer_name>.+) <(?<committer_email>.+)> ".
                "(?<committer_date>\d+) (?<committer_tz>[-+]\d{4})\n".
 
-               "\n(?<message>.*)\n/";
+               "\n(?<message>.*)/";
     $this->assertTrue(
       preg_match($pattern, $data, $matches),
       t('Commit message is printed in the correct format.'),
