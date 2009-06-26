@@ -445,7 +445,7 @@ class GitLibFastImportTestCase extends DrupalWebTestCase {
     $group = t('blob command');
     $data_marked = $this->randomName();
     $data_unmarked = $this->randomName();
-    $mark_id = 1;
+    $mark_id = rand(1, GitFastImport::MARK_ID_MAX);
     $options = array();
     $commands[] = array(
       'command' => 'blob',
@@ -470,6 +470,20 @@ class GitLibFastImportTestCase extends DrupalWebTestCase {
       'unique' => 1,
     );
     $this->assertObjectStats($stderr, 'marks', $counts, $group);
+
+    // Test MARK_ID_MAX
+    $commands[] = array(
+      'command' => 'blob',
+      'mark'    => GitFastImport::MARK_ID_MAX + 1,
+      'data'    => $data_marked,
+    );
+
+    try {
+      list($retval, $marks, $stdout, $stderr) = $this->fast->fastImport($commands, $options);
+      $this->fail(t('Oversize mark was not rejected.'), $group);
+    } catch (Exception $e) {
+      $this->pass(t('Oversize mark rejected.'), $group);
+    }
   }
 
   /**
@@ -484,7 +498,7 @@ class GitLibFastImportTestCase extends DrupalWebTestCase {
     $message  = $this->randomName();
     $contents = $this->randomName();
     $path     = $this->randomName();
-    $mark     = rand();
+    $mark     = rand(1, GitFastImport::MARK_ID_MAX);
 
     // Create a simple sample commit.
     $commands[] = array(
