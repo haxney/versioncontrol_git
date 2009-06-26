@@ -289,8 +289,11 @@ class GitFastImport {
     $marks = array();
     foreach ($lines as $line) {
       $split = preg_split('/ /', $line);
-      // First item is the markid, the second is the SHA-1
-      $marks[$split[0]] = $split[1];
+
+      // Convert the string mark id to the integer value with the leading colon
+      // stripped.
+      $mark_id = intval(preg_replace('/:/', '', $split[0]));
+      $marks[$mark_id] = $split[1];
     }
 
     return $marks;
