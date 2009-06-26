@@ -232,7 +232,7 @@ class GitLibFastImportTestCase extends DrupalWebTestCase {
 
                "\n(?<message>.*)\n/";
     $this->assertTrue(
-      is_int(preg_match($pattern, $data, $matches)),
+      preg_match($pattern, $data, $matches),
       t('Commit message is printed in the correct format.'),
       $group
     );
