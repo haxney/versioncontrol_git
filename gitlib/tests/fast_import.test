@@ -287,20 +287,20 @@ class GitLibFastImportTestCase extends DrupalWebTestCase {
    *   The group to set for the SimpleTest assertion.
    */
   function assertObjectStats($stderr, $type, $counts, $group) {
-    $pattern = '/ {6}%s {0,3}: +(\d+) \( +(\d+) (?:duplicates|unique)/';
+    $pattern = '/ {6}%s {0,3}: +(?<created>\d+) \( +(?<dup>\d+) (?:duplicates|unique)/';
     $pattern = sprintf($pattern, preg_quote($type));
     $this->assertTrue(
       preg_match($pattern, $stderr, $matches),
       t('Type found in statistics.'),
       $group
     );
-    $created = $matches[1];
-    $duplicates = $unique = $matches[2];
+    $created = intval($matches['created']);
+    $duplicates = $unique = intval($matches['dup']);
 
     if (isset($counts['created'])) {
       $this->assertIdentical(
         $created,
-        (string) $counts['created'],
+        intval($counts['created']),
         t('Number of created objects matches expectation.'),
         $group
       );
@@ -314,7 +314,7 @@ class GitLibFastImportTestCase extends DrupalWebTestCase {
         if (isset($counts['duplicates'])) {
           $this->assertIdentical(
             $duplicates,
-            $counts['duplicates'],
+            intval($counts['duplicates']),
             t('Number of duplicate objects matches expectation.'),
             $group
           );
@@ -324,7 +324,7 @@ class GitLibFastImportTestCase extends DrupalWebTestCase {
         if (isset($counts['unique'])) {
           $this->assertIdentical(
             $unique,
-            $counts['unique'],
+            intval($counts['unique']),
             t('Number of unique marks matches expectation.'),
             $group
           );
