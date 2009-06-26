@@ -570,8 +570,8 @@ class GitFastImport {
       case 'filemodify':
         $mode = $this->convertMode($this->checkAndGet($op, 'mode'));
         $output .= sprintf("M %s inline %s\n",
-                   $this->checkAndGet($op, 'mode'),
-                   $mode);
+                   $mode,
+                   $this->checkAndGet($op, 'path'));
         $output .= $this->handleData($this->checkAndGet($op, 'data'));
         break;
 
