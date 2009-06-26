@@ -373,6 +373,9 @@ class GitFastImport {
    * FALSE), so if the mark does not actually exist, this command will return
    * the empty string.
    *
+   * If $mark is greater than GitFastImport::MARK_ID_MAX, then an exception is
+   * thrown, since git's handling of the mark is undefined.
+   *
    * @param $mark
    *   Either NULL or a positive integer, which will be the value of the mark
    *   command.
@@ -382,6 +385,9 @@ class GitFastImport {
    *   git-fast-import(1) representation of the mark.
    */
   function handleMark($mark) {
+    if ($mark > self::MARK_ID_MAX) {
+      throw new Exception("Mark value '$mark' is greater than allowed maximum.");
+    }
     $output = '';
     if (!empty($mark)) {
       $output .= sprintf("mark :%d\n", $mark);
