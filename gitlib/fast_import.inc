@@ -288,7 +288,7 @@ class GitFastImport {
     $lines = file($filename, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
     $marks = array();
     foreach ($lines as $line) {
-      $split = preg_split(' ', $line);
+      $split = preg_split('/ /', $line);
       // First item is the markid, the second is the SHA-1
       $marks[$split[0]] = $split[1];
     }
