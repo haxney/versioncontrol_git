@@ -239,25 +239,25 @@ class GitLibFastImportTestCase extends DrupalWebTestCase {
     $tree = $matches['tree'];
     $author_name = $matches['author_name'];
     $author_email = $matches['author_email'];
-    $author_date = $matches['author_date'];
+    $author_date = intval($matches['author_date']);
     $author_tz = $matches['author_tz'];
     $committer_name = $matches['committer_name'];
     $committer_email = $matches['committer_email'];
-    $committer_date = $matches['committer_date'];
-    $commtter_tz = $matches['committer_tz'];
+    $committer_date = intval($matches['committer_date']);
+    $committer_tz = $matches['committer_tz'];
     $commit_message = $matches['message'];
 
     // Check each of the attributes.
-    $this->assertIfSet($tree, $match_data['tree'], 'Tree SHA-1', $group);
-    $this->assertIfSet($author_name, $match_data['author']['name'], 'Author name', $group);
-    $this->assertIfSet($author_email, $match_data['author']['email'], 'Author email', $group);
-    $this->assertIfSet($author_date, $match_data['author']['when']['time'], 'Author date', $group);
-    $this->assertIfSet($author_tz, $match_data['author']['when']['offutc'], 'Author timezone', $group);
-    $this->assertIfSet($committer_name, $match_data['committer']['name'], 'Committer name', $group);
-    $this->assertIfSet($committer_email, $match_data['committer']['email'], 'Committer email', $group);
-    $this->assertIfSet($committer_date, $match_data['committer']['when']['time'], 'Committer date', $group);
-    $this->assertIfSet($committer_tz, $match_data['committer']['when']['offutc'], 'Committer timezone', $group);
-    $this->assertIfSet($commit_message, $match_data['message'], 'Commit message', $group);
+    $this->assertIfSet($tree, $mark_data['tree'], 'Tree SHA-1', $group);
+    $this->assertIfSet($author_name, $mark_data['author']['name'], 'Author name', $group);
+    $this->assertIfSet($author_email, $mark_data['author']['email'], 'Author email', $group);
+    $this->assertIfSet($author_date, $mark_data['author']['when']['time'], 'Author date', $group);
+    $this->assertIfSet($author_tz, $mark_data['author']['when']['offutc'], 'Author timezone', $group);
+    $this->assertIfSet($committer_name, $mark_data['committer']['name'], 'Committer name', $group);
+    $this->assertIfSet($committer_email, $mark_data['committer']['email'], 'Committer email', $group);
+    $this->assertIfSet($committer_date, $mark_data['committer']['when']['time'], 'Committer date', $group);
+    $this->assertIfSet($committer_tz, $mark_data['committer']['when']['offutc'], 'Committer timezone', $group);
+    $this->assertIfSet($commit_message, $mark_data['message'], 'Commit message', $group);
   }
 
   /**
