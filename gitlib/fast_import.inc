@@ -26,6 +26,17 @@ class GitFastImport {
   );
 
   /**
+   * The maximum mark id.
+   *
+   * According to
+   * http://utsl.gen.nz/git-p4raw.html#errata__watch_out_for_gfi_mark___1_048_576
+   * if a mark id is above 1024 * 1024 - 1 (= 1,048,575), then the mark
+   * specified in the stdin to git fast-import will be completely different
+   * (unpredictably so) from the mark exported to the mark file.
+   */
+  const MARK_ID_MAX = 1048575;
+
+  /**
    * The default options for this instance.
    */
   protected $default_options;
