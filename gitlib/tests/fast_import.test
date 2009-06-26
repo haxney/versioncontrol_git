@@ -352,7 +352,7 @@ class GitLibFastImportTestCase extends DrupalWebTestCase {
     );
 
     $default_opts = '--date-format=raw --stats ';
-    $expected = $command . $default_opts;
+    $expected     = $command . $default_opts;
     $this->assertEqual(
       $expected,
       $this->fast->buildCommandLine($this->fast->defaultOptions()),
@@ -427,7 +427,7 @@ class GitLibFastImportTestCase extends DrupalWebTestCase {
    * Test the 'checkpoint' command.
    */
   function testCheckpointCommand() {
-    $group = t('checkpoint command');
+    $group      = t('checkpoint command');
     $commands[] = array(
       'command' => 'checkpoint',
     );
@@ -442,27 +442,27 @@ class GitLibFastImportTestCase extends DrupalWebTestCase {
    * Test the 'blob' command.
    */
   function testBlobCommand() {
-    $group = t('blob command');
-    $data_marked = $this->randomName();
+    $group         = t('blob command');
+    $data_marked   = $this->randomName();
     $data_unmarked = $this->randomName();
-    $mark_id = rand(1, GitFastImport::MARK_ID_MAX);
-    $options = array();
-    $commands[] = array(
+    $mark_id       = rand(1, GitFastImport::MARK_ID_MAX);
+    $options       = array();
+    $commands[]    = array(
       'command' => 'blob',
-      'mark' => $mark_id,
-      'data' => $data_marked,
+      'mark'    => $mark_id,
+      'data'    => $data_marked,
     );
 
-    $commands[] = array(
+    $commands[]    = array(
       'command' => 'blob',
-      'data' => $data_unmarked,
+      'data'    => $data_unmarked,
     );
     list($retval, $marks, $stdout, $stderr) = $this->fast->fastImport($commands, $options);
 
     $this->assertCommandSuccess($retval, $group);
     $this->assertMarkBlob($marks, $mark_id, $data_marked, $group);
     $counts = array(
-      'created' => 2,
+      'created'    => 2,
       'duplicates' => 0,
     );
     $this->assertObjectStats($stderr, 'blobs', $counts, $group);
@@ -502,24 +502,24 @@ class GitLibFastImportTestCase extends DrupalWebTestCase {
 
     // Create a simple sample commit.
     $commands[] = array(
-      'command' => 'commit',
-      'ref' => 'master',
-      'mark' => $mark,
+      'command'   => 'commit',
+      'ref'       => 'master',
+      'mark'      => $mark,
       'committer' => array(
-        'name' => $name,
+        'name'  => $name,
         'email' => $email,
-        'when' => array(
-          'time' => $time,
+        'when'  => array(
+          'time'   => $time,
           'offutc' => '+0000',
         ),
       ),
-      'message' => $message,
+      'message'    => $message,
       'operations' => array(
         array(
           'operation' => 'filemodify',
-          'mode' => 'normal',
-          'data' => $contents,
-          'path' => $path,
+          'mode'      => 'normal',
+          'data'      => $contents,
+          'path'      => $path,
         ),
       ),
     );
