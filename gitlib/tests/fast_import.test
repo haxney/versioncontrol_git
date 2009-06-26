@@ -360,8 +360,8 @@ class GitLibFastImportTestCase extends DrupalWebTestCase {
       'buildCommandLine()'
     );
 
-    $pack_size = 4095;
-    $file_name = 'random/name';
+    $pack_size = rand();
+    $file_name = $this->randomName();
     $opts_args = array(
       'quiet',
       'force',
