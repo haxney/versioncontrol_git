@@ -203,7 +203,7 @@ class GitFastImport {
    *
    *   $marks is an array of (markid => SHA-1).
    */
-  public function fastImport($commands, $options) {
+  public function fastImport($commands, $options = array()) {
     $options = array_merge($this->default_options, $options);
 
     if (empty($options['export-marks'])) {
