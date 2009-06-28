@@ -11,6 +11,8 @@
  * Copyright 2009 by Daniel Hackney ("dhax", http://drupal.org/user/384635)
  */
 
+require_once(drupal_get_path('module', 'versioncontrol_git') .'/gitlib/tests/test_helpers.test');
+
 class GitTestHelper extends DrupalWebTestCase {
 
   /**
