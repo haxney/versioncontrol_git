@@ -154,6 +154,93 @@ class GitUpdateHookTestCase extends GitTestHelper {
   }
 
   /**
+   * Test whether the correct groups of commits are selected for access
+   * checking.
+   *
+   * Uses 'git fast-import' to produce predictable revision names.
+   */
+  function testCommitGroups() {
+    $this->initRepo();
+    $this->initHook('update');
+    $this->wcClone();
+    $fast = new GitFastImport($this->repo['wc_path']);
+    $group     = t('groups of commits');
+    $options   = array();
+    $name      = $this->randomName();
+    $time      = rand(0, time());
+    $email     = sprintf('%s@%s.com', $this->randomName(), $this->randomName());
+    $message   = $this->randomName();
+    $data_base = $this->randomName();
+    $path      = $this->randomName();
+
+    // A template for creating commits. All commit times will be the same, but
+    // for testing, it doesn't really matter.
+    $commands_template = array(
+      'command'   => 'commit',
+      'ref'       => 'master',
+      'committer' => array(
+        'name'  => $name,
+        'email' => $email,
+        'when'  => array(
+          'time'   => $time,
+          'offutc' => '+0000',
+        ),
+      ),
+      'message'    => $message,
+      'operations' => array(
+        array(
+          'operation' => 'filemodify',
+          'mode'      => 'normal',
+          'data'      => $data_base,
+          'path'      => $path,
+        ),
+      ),
+    );
+
+    $marks[] = rand(1, GitFastImport::MARK_ID_MAX);
+    $contents[] = $this->randomName();
+    // Create a linear stream of commits, starting from the initial commit. All
+    // commits should be checked.
+    $modifications = array(
+      'mark' => $marks[0],
+      'operations' => array(
+        array(
+          'operation' => 'filemodify',
+          'mode'      => 'normal',
+          'data'      => $contents[0],
+          'path'      => $path,
+        ),
+      ),
+    );
+    $commands[] = array_merge($commands_template, $modifications);
+
+    // Create four more test commits.
+    for ($i = 1; $i <= 4; $i++) {
+      $marks[$i] = rand(1, GitFastImport::MARK_ID_MAX);
+      $contents[$i] = $this->randomName();
+
+      $current = array(
+        'mark' => $marks[$i],
+        'from' => $marks[$i - 1],
+        'operations' => array(
+          array(
+            'operation' => 'filemodify',
+            'mode'      => 'normal',
+            'data'      => $contents[$i],
+            'path'      => $path,
+          ),
+        ),
+      );
+      $commands[] = array_merge($commands_template, $current);
+    }
+
+    list($retval, $marks_out, $stdout, $stderr) = $fast->fastImport($commands);
+    $this->assertCommandSuccess($retval, $group);
+
+
+  }
+
+  /**
    * Test a number of different error conditions for the hook.
    */
   function testErrors() {
