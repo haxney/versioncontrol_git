@@ -132,20 +132,30 @@ class GitTestHelper extends GitLibTestBase {
 
   /**
    * Create the git repository.
+   *
+   * @param $path
+   *   The path of the git repository to create. If NULL, creates a repository
+   *   at $this->repo['path']
    */
-  function initRepo() {
-    $cmd = 'GIT_DIR="%s" git init --bare';
-    shell_exec(sprintf($cmd, $this->repo['path']));
-    mkdir($this->repo['xgit']);
-    mkdir($this->repo['wc_path']);
+  function initRepo($path=NULL) {
+    if (!isset($path)) {
+      $path = $this->repo['path'];
+      $bare = ' --bare';
+    }
+    mkdir($path, 0777, TRUE);
+    $cmd = 'GIT_DIR="%s" git init'. $bare;
+    shell_exec(sprintf($cmd, $path));
 
-    copy($this->hooks['config']['src'], $this->hooks['config']['dst']);
+    if (!$this->repo['created']) {
+      mkdir($this->repo['xgit']);
+      copy($this->hooks['config']['src'], $this->hooks['config']['dst']);
 
-    // Append simpletest-specific info to the config file.
-    $file = fopen($this->hooks['config']['dst'], 'a');
-    fwrite($file, $this->hooks['config']['text']);
-    fclose($file);
-    $this->repo['created'] = TRUE;
+      // Append simpletest-specific info to the config file.
+      $file = fopen($this->hooks['config']['dst'], 'a');
+      fwrite($file, $this->hooks['config']['text']);
+      fclose($file);
+      $this->repo['created'] = TRUE;
+    }
     return;
   }
 
