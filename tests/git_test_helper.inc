@@ -326,15 +326,27 @@ class GitTestHelper extends GitLibTestBase {
    *   Variable number of arguments to pass to the hook.
    *
    * @return
-   *   A list of the output of the command and the return value.
+   *   A list of the stdout and stderr of the command and the return value.
    */
   function execHook($hook) {
     $args = func_get_args();
     $command = $this->hooks[array_shift($args)]['file'] .' ';
     $command .= implode(' ', $args);
-    exec($command, $output, $retval);
-
-    $output = implode("\n", $output);
-    return array($output, $retval);
+    $descriptorspec = array(
+      0 => array("pipe", "r"), // stdin
+      1 => array("pipe", "w"), // stdout
+      2 => array("pipe", "w"), // stderr
+    );
+    $proc = proc_open($command, $descriptorspec, $pipes, $this->repo['path']);
+    $proc_in = $pipes[0];
+    $proc_out = $pipes[1];
+    $proc_err = $pipes[2];
+    fclose($proc_in);
+    $stdout_result = stream_get_contents($proc_out);
+    $stderr_result = stream_get_contents($proc_err);
+    fclose($proc_out);
+    fclose($proc_err);
+    $retval = proc_close($proc);
+    return array($sdtout_result, $stderr_result, $retval);
   }
 }

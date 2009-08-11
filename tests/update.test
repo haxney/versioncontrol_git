@@ -28,13 +28,13 @@ class GitUpdateHookTestCase extends GitTestHelper {
     $this->initRepo();
     $this->initHook('update');
 
-    list($result, $retval) = $this->execHook('update');
+    list($stdout, $stderr, $retval) = $this->execHook('update');
     $usage_text = t('Usage: php !cli <config file> <ref> <oldrev> <newrev>',
                   array('!cli' => $this->hooks['update']['dst']));
 
     $this->assertTrue(
-      is_int(strpos($result, $usage_text)),
-      t('Print help text when too few arguments are given.'),
+      is_int(strpos($stderr, $usage_text)),
+      t('Print help text when too few arguments are given. !text'),
       t('Shell Interaction')
     );
 
@@ -45,9 +45,9 @@ class GitUpdateHookTestCase extends GitTestHelper {
       t('Shell Interaction')
     );
 
-    list($result, $retval) = $this->execHook('update', 'too', 'many', 'arguments', 'for', 'the', 'hook');
+    list($stdout, $stderr, $retval) = $this->execHook('update', 'too', 'many', 'arguments', 'for', 'the', 'hook');
     $this->assertTrue(
-      is_int(strpos($result, $usage_text)),
+      is_int(strpos($stderr, $usage_text)),
       t('Print help text when too many arguments are given.'),
       t('Shell Interaction')
     );
@@ -269,7 +269,7 @@ class GitUpdateHookTestCase extends GitTestHelper {
       t('Update hook')
     );
 
-    list($result, $retval) = $this->execHook('update',
+    list($stdout, $stderr, $retval) = $this->execHook('update',
                              'refs/invalid/master',
                              VERSIONCONTROL_GIT_EMPTY_REF,
                              VERSIONCONTROL_GIT_EMPTY_REF);
@@ -283,7 +283,7 @@ class GitUpdateHookTestCase extends GitTestHelper {
 
     $ref = 'refs/invalid/master';
     putenv(sprintf('GIT_DIR=', escapeshellarg($this->repo['path'])));
-    list($result, $retval) = $this->execHook('update',
+    list($stdout, $stderr, $retval) = $this->execHook('update',
                              $ref,
                              VERSIONCONTROL_GIT_EMPTY_REF,
                              VERSIONCONTROL_GIT_EMPTY_REF);
@@ -307,7 +307,7 @@ class GitUpdateHookTestCase extends GitTestHelper {
     $new_obj = 'f8fcb0d040a13fb885bc1accd950f1f459c024b7';
     $old_obj = VERSIONCONTROL_GIT_EMPTY_REF;
     $ref = 'refs/heads/master';
-    list($result, $retval) = $this->execHook('update',
+    list($stdout, $stderr, $retval) = $this->execHook('update',
                              $ref,
                              $old_obj,
                              $new_obj);
