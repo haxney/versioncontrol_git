@@ -249,7 +249,6 @@ class GitFastImport {
     $stdout_result = stream_get_contents($proc_out);
     $stderr_result = stream_get_contents($proc_err);
 
-
     fclose($proc_out);
     fclose($proc_err);
     $ret_val = proc_close($proc);
