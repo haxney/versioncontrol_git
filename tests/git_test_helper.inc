@@ -11,7 +11,7 @@
  * Copyright 2009 by Daniel Hackney ("dhax", http://drupal.org/user/384635)
  */
 
-require_once(drupal_get_path('module', 'versioncontrol_git') .'/gitlib/tests/test_helpers.test');
+require_once(drupal_get_path('module', 'versioncontrol_git') .'/gitlib/tests/test_helpers.inc');
 
 class GitTestHelper extends DrupalWebTestCase {
 
@@ -90,7 +90,7 @@ class GitTestHelper extends DrupalWebTestCase {
     $this->hooks['config']['text'] = sprintf($format, $this->base_path, $GLOBALS['db_prefix']);
 
     require_once($this->hooks['config']['src']);
-    require_once($this->module_source . 'gitlib/git.php');
+    require_once($this->module_source . '/gitlib/git.php');
 
     // Fill in each of the hooks.
     foreach ($this->hook_names as $hook) {

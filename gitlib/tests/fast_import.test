@@ -12,8 +12,9 @@
  */
 
 require_once(dirname(__FILE__) . '/../git.php');
-require_once(dirname(__FILE__) . '/test_helpers.test');
-class GitLibFastImportTestCase extends DrupalWebTestCase {
+require_once(dirname(__FILE__) . '/test_helpers.inc');
+
+class GitLibFastImportTestCase extends GitLibTestBase {
 
   public static function getInfo() {
     return array(
