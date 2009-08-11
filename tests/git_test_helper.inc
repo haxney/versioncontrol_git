@@ -68,16 +68,17 @@ class GitTestHelper extends GitLibTestBase {
   function setUp() {
     parent::setUp('versioncontrol', 'versioncontrol_git', 'commitlog');
 
-    $this->old_wd          = getcwd();
-    $this->file_path       = realpath(file_directory_path());
-    $this->repo['path']    = $this->file_path .'/repo.git';
-    $this->repo['xgit']    = $this->repo['path'] .'/hooks/xgit';
-    $this->repo['url']     = 'file://'. $this->repo['path'];
-    $this->repo['wc_path'] = $this->file_path .'/gitwc';
-    $this->repo['created'] = FALSE;
-    $this->base_path       = dirname($_SERVER['SCRIPT_FILENAME']);
-    $this->obj_regex       = '([0-9a-f]+)';
-    $this->module_source   = realpath(drupal_get_path('module', 'versioncontrol_git'));
+    $this->old_wd             = getcwd();
+    $this->file_path          = realpath(file_directory_path());
+    $this->repo['path']       = $this->file_path .'/repo.git';
+    $this->repo['xgit']       = $this->repo['path'] .'/hooks/xgit';
+    $this->repo['url']        = 'file://'. $this->repo['path'];
+    $this->repo['wc_path']    = $this->file_path .'/gitwc';
+    $this->repo['wc_git_dir'] = $this->repo['wc_path'] .'/.git';
+    $this->repo['created']    = FALSE;
+    $this->base_path          = dirname($_SERVER['SCRIPT_FILENAME']);
+    $this->obj_regex          = '([0-9a-f]+)';
+    $this->module_source      = realpath(drupal_get_path('module', 'versioncontrol_git'));
 
 
     // The config 'hook' is special, so fill it in separately.

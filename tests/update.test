@@ -66,7 +66,7 @@ class GitUpdateHookTestCase extends GitTestHelper {
   public function testPushing() {
     $this->initRepo();
     $this->initHook('update');
-    $this->initRepo($this->repo['wc_path'] .'/.git');
+    $this->initRepo($this->repo['wc_git_dir']);
 
     $path     = $this->randomName();
     $contents = $this->randomName();
@@ -156,7 +156,7 @@ class GitUpdateHookTestCase extends GitTestHelper {
   function testCommitGroups() {
     $this->initRepo();
     $this->initHook('update');
-    $this->wcClone();
+    $this->initRepo($this->repo['wc_git_dir']);
     $fast = new GitFastImport($this->repo['wc_path']);
     $group     = t('groups of commits');
     $options   = array();
@@ -230,8 +230,6 @@ class GitUpdateHookTestCase extends GitTestHelper {
 
     list($retval, $marks_out, $stdout, $stderr) = $fast->fastImport($commands);
     $this->assertCommandSuccess($retval, $group);
-
-
   }
 
   /**
@@ -240,7 +238,7 @@ class GitUpdateHookTestCase extends GitTestHelper {
   function testErrors() {
     $this->initRepo();
     $this->initHook('update');
-    $this->wcClone();
+    $this->initRepo($this->repo['wc_git_dir']);
 
     $path     = $this->randomName();
     $contents = $this->randomName();
