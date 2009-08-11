@@ -34,7 +34,7 @@ class GitUpdateHookTestCase extends GitTestHelper {
 
     $this->assertTrue(
       is_int(strpos($stderr, $usage_text)),
-      t('Print help text when too few arguments are given. !text'),
+      t('Print help text when too few arguments are given.'),
       t('Shell Interaction')
     );
 
