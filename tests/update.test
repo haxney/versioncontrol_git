@@ -66,20 +66,14 @@ class GitUpdateHookTestCase extends GitTestHelper {
   public function testPushing() {
     $this->initRepo();
     $this->initHook('update');
-    $result = $this->wcClone();
-    $expected = sprintf('Initialized empty Git repository in %s', $this->repo['wc_path']);
-    $this->assertTrue(
-      is_int(strpos($result, $expected)),
-      t('Clone the git repository.'),
-      t('Shell Interaction')
-    );
+    $this->initRepo($this->repo['wc_path'] .'/.git');
 
     $path     = $this->randomName();
     $contents = $this->randomName();
     $result   = $this->wcAddSampleFile($path, $contents);
 
-    $this->assertTrue(
-      is_int(strpos($result, "\n")),
+    $this->assertFalse(
+      $result,
       t('Add test file to the repository (should not produce output).'),
       t('Shell Interaction')
     );
