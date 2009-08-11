@@ -13,7 +13,7 @@
 
 require_once(drupal_get_path('module', 'versioncontrol_git') .'/gitlib/tests/test_helpers.inc');
 
-class GitTestHelper extends DrupalWebTestCase {
+class GitTestHelper extends GitLibTestBase {
 
   /**
    * Root of the temporary SimpleTest files directory.
