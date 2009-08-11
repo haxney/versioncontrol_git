@@ -131,7 +131,7 @@ class GitTestHelper extends GitLibTestBase {
   }
 
   /**
-   * Create the subversion repository.
+   * Create the git repository.
    */
   function initRepo() {
     $cmd = 'GIT_DIR="%s" git init --bare';
