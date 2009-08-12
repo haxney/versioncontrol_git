@@ -82,14 +82,11 @@ class GitUpdateHookTestCase extends GitTestHelper {
     $message = $this->randomName();
     $result = $this->wcCommit($message);
 
-    $pattern = array(
-      'Created initial commit %s: %s',
-      '1 files changed, 1 insertions(+), 0 deletions(-)',
-      'create mode 100644 %s',
-    );
-    $pattern = preg_quote(implode("\n", $pattern), '/');
+    $pattern = '/Created initial commit %s: %s\n'.
+               ' +1 files changed, 1 insertions\(\+\), 0 deletions\(-\)\n'.
+               ' +create mode 100644 %s/';
+
     $pattern = sprintf($pattern,$this->obj_regex, $message, $path);
-    $pattern = '/'. preg_quote($pattern, '/') .'/';
     $this->assertTrue(
       preg_match($pattern, $result, $matches),
       t('Commit the initial revision.'),
