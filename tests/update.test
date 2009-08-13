@@ -141,7 +141,7 @@ class GitUpdateHookTestCase extends GitTestHelper {
     $this->assertEqual(
       $error_code,
       VERSIONCONTROL_GIT_ERROR_NO_REPOSITORY,
-      t('Refuse push when no Drupal repository exists.'),
+      t('Return correct error code when no Drupal repository exists.'),
       t('Update hook')
     );
 
