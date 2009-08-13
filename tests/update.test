@@ -134,7 +134,7 @@ class GitUpdateHookTestCase extends GitTestHelper {
                $this->repo['url']);
     $this->assertTrue(
       preg_match($pattern, $stderr, $matches),
-      t('Fail pushing to repository without an account.'),
+      t('Refuse push when no Drupal repository exists.'),
       t('Update hook')
     );
     $error_code = (int) $matches[1];
