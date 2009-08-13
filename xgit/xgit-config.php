@@ -673,7 +673,6 @@ function _xgit_get_merged_branches($commit, $merged = TRUE, $include_remote = FA
  *   Nothing, throws exceptions if there is a failure.
  */
 function _xgit_assert_type($pairs) {
-  xdebug_break();
   $msg = "Type mismatch: expected object '%s' to be type '%s',  received '%s'.";
   foreach($pairs as $object => $type) {
     $received = xgit_get_type($object);
