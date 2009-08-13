@@ -263,8 +263,8 @@ function _xgit_load_object($object) {
     );
     _xgit_assert_type(array($object, $allowed_types));
 
-    $command = 'git show --name-status --pretty=short --date=iso8601 %s';
-    $command = sprintf($command, escapeshellarg($object));
+    $command = 'git --git-dir="%s" show --name-status --pretty=short --date=iso8601 %s';
+    $command = sprintf($command, $xgit['git_dir'], escapeshellarg($object));
     $result = trim(shell_exec($command));
     $result = preg_split('/\n/', $result, -1, PREG_SPLIT_NO_EMPTY);
     $xgit['objects'][$object]['log'] = $result;
@@ -286,7 +286,7 @@ function _xgit_load_object($object) {
 function xgit_is_valid($object) {
   global $xgit;
   if (!isset($xgit['objects'][$object]['valid'])) {
-    $command = 'GIT_DIR="%s" git cat-file -t %s';
+    $command = 'git --git-dir="%s" cat-file -t %s';
     $command = sprintf($command, $xgit['git_dir'], escapeshellarg($object));
     $type = exec($command, $empty, $ret_val);
     $xgit['objects'][$object]['valid'] = $ret_val === 0;
@@ -321,8 +321,8 @@ function xgit_get_type($object) {
     if ($object == VERSIONCONTROL_GIT_EMPTY_REF) {
       $xgit['objects'][$object]['type'] = 'empty';
     } else {
-      $command = 'git cat-file -t %s';
-      $command = sprintf($command, escapeshellarg($object));
+      $command = 'git --git-dir="%s" cat-file -t %s';
+      $command = sprintf($command, $xgit['git_dir'], escapeshellarg($object));
       $xgit['objects'][$object]['type'] = trim(shell_exec($command));
     }
     $xgit['objects'][$object]['valid'] = TRUE;
@@ -575,8 +575,8 @@ function xgit_get_commits($old, $new, $target_ref = NULL) {
 
   $range = sprintf($range_template, $old, $new);
   if (!isset($xgit['ranges'][$range])) {
-    $command = 'git rev-list %s';
-    $command = sprintf($command, escapeshellarg($range_template));
+    $command = 'git --git-dir="%s" rev-list %s';
+    $command = sprintf($command, $xgit['git_dir'], escapeshellarg($range_template));
     $result = trim(shell_exec($command));
     $result = preg_split('/\n/', $result, -1, PREG_SPLIT_NO_EMPTY);
     $xgit['ranges'][$range] = $result;
@@ -596,7 +596,9 @@ function xgit_get_commits($old, $new, $target_ref = NULL) {
  *   A space-separated string of all ref names in the repository.
  */
 function _xgit_all_refs($except = NULL) {
-  $command = 'git rev-parse --symbolic-full-name --branches --tags';
+  global $xgit;
+  $command = 'git --git-dir="%s" rev-parse --symbolic-full-name --branches --tags';
+  $command = sprintf($command, $xgit['git_dir']);
   $result = shell_exec($command);
 
   $refs = implode(' ', explode("\n", $result));
@@ -639,8 +641,8 @@ function _xgit_get_merged_branches($commit, $merged = TRUE, $include_remote = FA
   if (!isset($xgit['objects'][$commit]['unmerged'])) {
     $remote_spec = $include_remote ? '-a' : '';
     $merged_spec = $merged ? '--merged' : '--no-merged';
-    $command = 'git branch %s --no-color %s %s';
-    $command = sprintf($command, $remote_spec, $merged_spec, escapeshellarg($commit));
+    $command = 'git --git-dir="%s" branch %s --no-color %s %s';
+    $command = sprintf($command, $xgit['git_dir'], $remote_spec, $merged_spec, escapeshellarg($commit));
     $result = shell_exec($command);
     $branches = preg_split("/\n/", $result, -1, PREG_SPLIT_NO_EMPTY);
 
