@@ -576,7 +576,7 @@ function xgit_get_commits($old, $new, $target_ref = NULL) {
   $range = sprintf($range_template, $old, $new);
   if (!isset($xgit['ranges'][$range])) {
     $command = 'git --git-dir="%s" rev-list %s';
-    $command = sprintf($command, $xgit['git_dir'], escapeshellarg($range_template));
+    $command = sprintf($command, $xgit['git_dir'], $range);
     $result = trim(shell_exec($command));
     $result = preg_split('/\n/', $result, -1, PREG_SPLIT_NO_EMPTY);
     $xgit['ranges'][$range] = $result;
