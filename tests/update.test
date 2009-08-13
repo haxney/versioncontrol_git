@@ -153,7 +153,7 @@ class GitUpdateHookTestCase extends GitTestHelper {
     $this->assertEqual(
       $error_code,
       VERSIONCONTROL_GIT_ERROR_NO_ACCOUNT,
-      t('Refuse push when user does not have an account on the Git repository. !error', array('!error' => $error_code)),
+      t('Refuse push when user does not have an account on the Git repository.'),
       t('Update hook')
     );
 
