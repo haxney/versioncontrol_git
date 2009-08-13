@@ -715,14 +715,8 @@ function _xgit_assert_type($pairs) {
 function xgit_check_commit_access($commit, $label) {
   global $xgit;
   // Construct basic common array. It will be the same across all cases.
-  $operation = array(
-    'repo_id' => $xgit['repo_id'],
-    'labels' => array(
-      array(
-        'name' => $ref,
-      )),
-  );
-
+  $operation = array();
+  $operation['repo_id']  = $xgit['repo_id'];
   $item_paths            = xgit_get_commit_files($commit);
   $operation['type']     = xgit_operation_type($ref);
   $operation['username'] = xgit_get_commit_author($commit);
