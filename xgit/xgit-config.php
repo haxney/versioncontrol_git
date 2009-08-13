@@ -66,6 +66,7 @@ define('VERSIONCONTROL_GIT_ERROR_NO_ACCESS',        7);
 define('VERSIONCONTROL_GIT_ERROR_FAILED_BOOTSTRAP', 8);
 define('VERSIONCONTROL_GIT_ERROR_NO_REPOSITORY',    9);
 define('VERSIONCONTROL_GIT_ERROR_INVALID_OBJ',      10);
+define('VERSIONCONTROL_GIT_ERROR_NO_UID',           11);
 
 
 // An empty sha1 sum, represents the parent of the initial commit or the
@@ -76,6 +77,12 @@ function xgit_bootstrap() {
   global $xgit;
   // Add $drupal_path to current value of the PHP include_path.
   set_include_path(get_include_path() . PATH_SEPARATOR . $xgit['drupal_path']);
+
+  if (empty($_ENV['GIT_DRUPAL_UID'])) {
+    fwrite(STDERR, "Error: No environment variable 'GIT_DRUPAL_UID' set or it is empty.\n");
+    exit(VERSIONCONTROL_GIT_ERROR_NO_UID);
+  }
+  $xgit['uid'] = $_ENV['GIT_DRUPAL_UID'];
 
   chdir($xgit['drupal_path']);
 
