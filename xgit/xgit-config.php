@@ -28,9 +28,9 @@ $xgit['repo_id'] = -1;
 // Optional customization
 // ------------------------------------------------------------
 
-// These users are always allowed full access, even if we can't
-// connect to the DB. This optional list should contain the Git
-// usernames (not the Drupal username if they're different).
+// These users are always allowed full access, even if we can't connect to the
+// DB. This optional list should contain the Drupal user IDs of the allowed
+// users.
 $xgit['allowed_users'] = array();
 
 // If you run a multisite installation, specify the directory
@@ -711,20 +711,19 @@ function _xgit_assert_type($pairs) {
  */
 function xgit_check_commit_access($commit, $label) {
   global $xgit;
-      // Construct basic common array. It will be the same across all cases.
-    $operation = array(
-      'repo_id' => $xgit['repo_id'],
-      'labels' => array(
-        array(
-          'name' => $ref,
-        )),
-    );
+  // Construct basic common array. It will be the same across all cases.
+  $operation = array(
+    'repo_id' => $xgit['repo_id'],
+    'labels' => array(
+      array(
+        'name' => $ref,
+      )),
+  );
 
-  $username   = xgit_get_commit_author($commit);
-  $item_paths = xgit_get_commit_files($commit);
-
-  $operation['type'] = xgit_operation_type($ref);
-  $operation['username'] = $username;
+  $item_paths            = xgit_get_commit_files($commit);
+  $operation['type']     = xgit_operation_type($ref);
+  $operation['username'] = xgit_get_commit_author($commit);
+  $operation['uid']      = $xgit['uid'];
   $operation['labels'][] = $label;
 
   // Set the $operation_items array from the item path and status.

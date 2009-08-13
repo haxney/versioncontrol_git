@@ -64,7 +64,7 @@ function xgit_init($argc, $argv) {
   global $xgit;
 
   // Admins and other privileged users don't need to go through any checks.
-  if (!in_array($username, $xgit['allowed_users'])) {
+  if (!in_array($xgit['uid'], $xgit['allowed_users'])) {
     // Do a full Drupal bootstrap.
     xgit_bootstrap();
 
