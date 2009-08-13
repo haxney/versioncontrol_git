@@ -100,6 +100,11 @@ function xgit_bootstrap() {
     $_SERVER['SCRIPT_NAME'] = '/foo';
   }
 
+  // Overwrite db_prefix if this is a simpletest run.
+  if (isset($GLOBALS['simpletest_db_prefix'])) {
+    $GLOBALS['db_prefix'] = $GLOBALS['simpletest_db_prefix'];
+  }
+
   require_once './includes/bootstrap.inc';
   drupal_bootstrap(DRUPAL_BOOTSTRAP_FULL);
 
