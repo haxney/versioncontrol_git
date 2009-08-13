@@ -189,6 +189,14 @@ class GitTestHelper extends GitLibTestBase {
   }
 
   /**
+   * Adds a remote to the git working copy.
+   */
+  function setRemote($name, $url) {
+    $command = sprintf('GIT_DIR="%s" git remote add %s %s', $this->repo['wc_git_dir'], $name, $url);
+    return $this->execCmd($command);
+  }
+
+  /**
    * Copy the named hook to the repository directory. Throws an exception if the
    * repository is not already initialized.
    *

@@ -67,6 +67,7 @@ class GitUpdateHookTestCase extends GitTestHelper {
     $this->initRepo();
     $this->initHook('update');
     $this->initRepo($this->repo['wc_git_dir']);
+    $this->setRemote('origin', $this->repo['url']);
 
     $path     = $this->randomName();
     $contents = $this->randomName();
@@ -80,7 +81,7 @@ class GitUpdateHookTestCase extends GitTestHelper {
 
     // Attempt to commit, but fail because the system user does not have access.
     $message = $this->randomName();
-    $result = $this->wcCommit($message);
+    $stdout = $this->wcCommit($message);
 
     $pattern = '/Created initial commit %s: %s\n'.
                ' +1 files changed, 1 insertions\(\+\), 0 deletions\(-\)\n'.
@@ -88,7 +89,7 @@ class GitUpdateHookTestCase extends GitTestHelper {
 
     $pattern = sprintf($pattern,$this->obj_regex, $message, $path);
     $this->assertTrue(
-      preg_match($pattern, $result, $matches),
+      preg_match($pattern, $stdout, $matches),
       t('Commit the initial revision.'),
       t('Shell Interaction')
     );
@@ -109,12 +110,11 @@ class GitUpdateHookTestCase extends GitTestHelper {
       t('Fail pushing to repository without an account.'),
       t('Update hook')
     );
-    $error_code = $matches[1];
-
+    $error_code = (int) $matches[1];
     $this->assertEqual(
       $error_code,
-      VERSIONCONTROL_GIT_ERROR_NO_ACCOUNT,
-      t('Correct error code is returned.'),
+      VERSIONCONTROL_GIT_ERROR_NO_REPOSITORY,
+      t('Refuse push when no Drupal repository exists.'),
       t('Update hook')
     );
 
