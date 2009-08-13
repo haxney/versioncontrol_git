@@ -74,8 +74,8 @@ function xgit_init($argc, $argv) {
       exit(VERSIONCONTROL_GIT_ERROR_INVALID_REF);
     }
     _xgit_assert_type(array(
-        $new_obj => array('commit', 'tag'),
-        $old_obj => array('commit', 'tag'),
+        $new_obj => array('commit', 'tag', 'empty'),
+        $old_obj => array('commit', 'tag', 'empty'),
       ));
 
     // Debugging help

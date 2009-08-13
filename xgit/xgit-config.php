@@ -547,8 +547,8 @@ function xgit_get_operation_item($path, $properties) {
 function xgit_get_commits($old, $new, $target_ref = NULL) {
   global $xgit;
   _xgit_assert_type(array(
-      $old => array('commit', 'tag'),
-      $new => array('commit', 'tag'),
+      $old => array('commit', 'tag', 'empty'),
+      $new => array('commit', 'tag', 'empty'),
     ));
 
   $range_template = '%s..%s';
