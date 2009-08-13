@@ -9,6 +9,8 @@
  * Copyright 2009 by Daniel Hackney ('dhax', http://drupal.org/user/384635)
  */
 
+global $xgit;
+$xgit = array();
 // ------------------------------------------------------------
 // Required customization
 // ------------------------------------------------------------
@@ -70,8 +72,8 @@ define('VERSIONCONTROL_GIT_ERROR_INVALID_OBJ',      10);
 // deletion of a reference.
 define('VERSIONCONTROL_GIT_EMPTY_REF', '0000000000000000000000000000000000000000');
 
-function xgit_bootstrap($xgit) {
-
+function xgit_bootstrap() {
+  global $xgit;
   // Add $drupal_path to current value of the PHP include_path.
   set_include_path(get_include_path() . PATH_SEPARATOR . $xgit['drupal_path']);
 
@@ -103,9 +105,9 @@ function xgit_bootstrap($xgit) {
     exit(VERSIONCONTROL_GIT_ERROR_NO_GIT_DIR);
   }
 
-  $repo['git_dir']         = $_ENV['GIT_DIR'];
+  $xgit['git_dir']         = $_ENV['PWD'];
 
-  if (isempty($xgit['repo'])) {
+  if (empty($xgit['repo'])) {
     $message = "Error: git repository with id '%s' does not exist.\n";
     fwrite(STDERR, sprintf($message, $xgit['repo_id']));
     exit(VERSIONCONTROL_GIT_ERROR_NO_REPOSITORY);
@@ -246,6 +248,7 @@ function xgit_get_commit_files($commit) {
  *    and a tag pointing at a file whose first line is "commit <sha1 sum>".
  */
 function _xgit_load_object($object) {
+  global $xgit;
   if (!isset($xgit['objects'][$object]['log'])) {
     $allowed_types = array(
       'commit',
@@ -274,9 +277,10 @@ function _xgit_load_object($object) {
  *   TRUE if the object is valid, FALSE otherwise.
  */
 function xgit_is_valid($object) {
+  global $xgit;
   if (!isset($xgit['objects'][$object]['valid'])) {
-    $command = 'git cat-file -t %s';
-    $command = sprintf($command, escapeshellarg($object));
+    $command = 'GIT_DIR="%s" git cat-file -t %s';
+    $command = sprintf($command, $xgit['git_dir'], escapeshellarg($object));
     $type = exec($command, $empty, $ret_val);
     $xgit['objects'][$object]['valid'] = $ret_val === 0;
     $xgit['objects'][$object]['type'] = trim($type);
@@ -301,6 +305,7 @@ function xgit_is_valid($object) {
  *   - empty
  */
 function xgit_get_type($object) {
+  global $xgit;
   if ($object != VERSIONCONTROL_GIT_EMPTY_REF && !xgit_is_valid($object)) {
     throw new Exception("Object '$object' is not valid in this repository");
   }
@@ -396,6 +401,7 @@ function xgit_action($old_obj, $new_obj, $branch_or_tag=FALSE) {
  *   An array of merged references if this is a merge, or FALSE if not.
  */
 function xgit_merge_info($object) {
+  global $xgit;
   if(!isset($xgit['objects'][$object]['merge'])) {
     $lines = _xgit_load_object($object);
     $merge = FALSE;
@@ -539,6 +545,7 @@ function xgit_get_operation_item($path, $properties) {
  *   include $old.
  */
 function xgit_get_commits($old, $new, $target_ref = NULL) {
+  global $xgit;
   _xgit_assert_type(array(
       $old => array('commit', 'tag'),
       $new => array('commit', 'tag'),
@@ -619,6 +626,7 @@ function _xgit_all_refs($except = NULL) {
  *   by default.
  */
 function _xgit_get_merged_branches($commit, $merged = TRUE, $include_remote = FALSE) {
+  global $xgit;
   _xgit_assert_type(array($commit => 'commit'));
 
   if (!isset($xgit['objects'][$commit]['unmerged'])) {
@@ -656,6 +664,7 @@ function _xgit_get_merged_branches($commit, $merged = TRUE, $include_remote = FA
  *   Nothing, throws exceptions if there is a failure.
  */
 function _xgit_assert_type($pairs) {
+  xdebug_break();
   $msg = "Type mismatch: expected object '%s' to be type '%s',  received '%s'.";
   foreach($pairs as $object => $type) {
     $received = xgit_get_type($object);
@@ -694,6 +703,7 @@ function _xgit_assert_type($pairs) {
  *   The output of versioncontrol_has_write_access() on the arguments.
  */
 function xgit_check_commit_access($commit, $label) {
+  global $xgit;
       // Construct basic common array. It will be the same across all cases.
     $operation = array(
       'repo_id' => $xgit['repo_id'],

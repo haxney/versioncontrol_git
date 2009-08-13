@@ -61,11 +61,12 @@ function xgit_init($argc, $argv) {
     exit(VERSIONCONTROL_GIT_ERROR_NO_CONFIG);
   }
   include_once $config_file;
+  global $xgit;
 
   // Admins and other privileged users don't need to go through any checks.
   if (!in_array($username, $xgit['allowed_users'])) {
     // Do a full Drupal bootstrap.
-    xgit_bootstrap($xgit);
+    xgit_bootstrap();
 
     $ref_type = xgit_ref_type($ref);
     if ($ref_type === FALSE) {
