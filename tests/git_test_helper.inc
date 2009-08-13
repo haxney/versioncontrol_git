@@ -132,6 +132,34 @@ class GitTestHelper extends GitLibTestBase {
   }
 
   /**
+   * Execute a command and return STDOUT, STDERR, and the return value.
+   *
+   * @param $command
+   *   The command to run.
+   *
+   * @return
+   *   An array of (STDOUT, STDERR, return_value).
+   */
+  function execCmd($command) {
+    $descriptorspec = array(
+      0 => array("pipe", "r"), // stdin
+      1 => array("pipe", "w"), // stdout
+      2 => array("pipe", "w"), // stderr
+    );
+    $proc = proc_open($command, $descriptorspec, $pipes, $this->repo['path']);
+    $proc_in = $pipes[0];
+    $proc_out = $pipes[1];
+    $proc_err = $pipes[2];
+    fclose($proc_in);
+    $stdout_result = stream_get_contents($proc_out);
+    $stderr_result = stream_get_contents($proc_err);
+    fclose($proc_out);
+    fclose($proc_err);
+    $retval = proc_close($proc);
+    return array($sdtout_result, $stderr_result, $retval);
+  }
+
+  /**
    * Create the git repository.
    *
    * @param $path
@@ -276,9 +304,8 @@ class GitTestHelper extends GitLibTestBase {
    * Push to the default (origin) remote branch and return the result.
    */
   function wcPush() {
-    exec('git push origin master', $output, $ret_val);
-
-    return array(implode("\n", $output), $ret_val);
+    $command = sprintf('GIT_DIR="%s" git push origin master', $this->repo['wc_git_dir']);
+    return $this->execCmd($command);
   }
 
   /**
@@ -343,21 +370,6 @@ class GitTestHelper extends GitLibTestBase {
     $args = func_get_args();
     $command = $this->hooks[array_shift($args)]['file'] .' ';
     $command .= implode(' ', $args);
-    $descriptorspec = array(
-      0 => array("pipe", "r"), // stdin
-      1 => array("pipe", "w"), // stdout
-      2 => array("pipe", "w"), // stderr
-    );
-    $proc = proc_open($command, $descriptorspec, $pipes, $this->repo['path']);
-    $proc_in = $pipes[0];
-    $proc_out = $pipes[1];
-    $proc_err = $pipes[2];
-    fclose($proc_in);
-    $stdout_result = stream_get_contents($proc_out);
-    $stderr_result = stream_get_contents($proc_err);
-    fclose($proc_out);
-    fclose($proc_err);
-    $retval = proc_close($proc);
-    return array($sdtout_result, $stderr_result, $retval);
+    return $this->execCmd($command);
   }
 }

@@ -94,23 +94,18 @@ class GitUpdateHookTestCase extends GitTestHelper {
     );
     // Get the revision identifier (the first match group).
     $rev = $matches[1];
+    list($stdout, $stderr, $retval) = $this->wcPush();
+    $pattern = '@error: hooks/update exited with error code (\d+)\n'.
+               'error: hook declined to update refs/heads/master\n'.
+               'To %s\n'.
+               ' +! \[remote rejected\] master -> master \(hook declined\)\n'.
+               "error: failed to push some refs to '%s'@";
 
-    list($result, $retval) = $this->wcPush();
-    $pattern = array(
-      'error: hooks/update exited with error code %s',
-      'error: hook declined to update refs/heads/master',
-      'To %s',
-      '! [remote rejected] master -> master (hook declined)',
-      "error: failed to push some refs to '%s'",
-    );
-    $pattern = preg_quote(implode("\n", $pattern), '/');
     $pattern = sprintf($pattern,
-               '(\d+)',
-               preg_quote($this->repo['path'], '/'),
-               preg_quote($this->repo['path'], '/'));
-    $pattern = '/'. $pattern .'/';
+               $this->repo['url'],
+               $this->repo['url']);
     $this->assertTrue(
-      preg_match($pattern, $result, $matches),
+      preg_match($pattern, $stderr, $matches),
       t('Fail pushing to repository without an account.'),
       t('Update hook')
     );
@@ -129,8 +124,18 @@ class GitUpdateHookTestCase extends GitTestHelper {
 
     // Create the Drupal repository and add a user account.
     $this->initDrupalRepo($this->randomName());
-    $this->initGitAccount($user->uid, $username);
+    list($stdout, $stderr, $retval) = $this->wcPush();
+    preg_match($pattern, $stderr, $matches);
+    $error_code = (int) $matches[1];
+    xdebug_break();
+    $this->assertEqual(
+      $error_code,
+      VERSIONCONTROL_GIT_ERROR_NO_ACCOUNT,
+      t('Refuse push when user does not have an account on the Git repository. !error', array('!error' => $error_code)),
+      t('Update hook')
+    );
 
+    $this->initGitAccount($user->uid, $username);
     list($result, $ret_val) = $this->wcPush();
     $pattern = array(
       'To %s',
