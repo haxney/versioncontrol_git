@@ -86,7 +86,7 @@ class GitTestHelper extends GitLibTestBase {
     $this->hooks['config']['dst'] = $this->repo['xgit'] .'/xgit-config.php';
     $format = "\$xgit['drupal_path'] = '%s';\n".
               "\$GLOBALS['xgit_debug'] = TRUE;\n".
-              "\$GLOBALS['simpletest_db_prefix'] = '%s';";
+              "\$GLOBALS['simpletest_db_prefix'] = '%s';\n";
 
     $this->hooks['config']['text'] = sprintf($format, $this->base_path, $GLOBALS['db_prefix']);
 
