@@ -221,9 +221,6 @@ function xgit_get_commit_files($commit) {
  * @param $object
  *   The object id to load.
  *
- * @param $repo
- *   The path of the repository in which to look.
- *
  * @return
  *   An array containing the lines of looking up the object from the
  *   repository. The form depends on the type of object. If it is a commit or an
