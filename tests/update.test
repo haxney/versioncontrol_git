@@ -117,8 +117,9 @@ class GitUpdateHookTestCase extends GitTestHelper {
       t('Hook initialization')
     );
 
-    $user = $this->drupalCreateUser(array('administer version control systems'));
-    $this->drupalLogin($user);
+    $user = $this->drupalCreateUser(array('use version control systems'));
+    $admin = $this->drupalCreateUser(array('administer version control systems'));
+    $this->drupalLogin($admin);
     $username = $this->randomName();
     putenv("GIT_DRUPAL_UID=$user->uid");
 
