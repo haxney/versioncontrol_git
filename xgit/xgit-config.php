@@ -131,7 +131,7 @@ function xgit_bootstrap() {
  *   The author of the commit or FALSE if none is found.
  */
 function xgit_get_commit_author($commit) {
-  $lines = _xgit_load_commit($commit);
+  $lines = _xgit_load_object($commit);
 
   $author = FALSE;
   // Walk the lines until the first "Author:" line is found.
@@ -186,7 +186,7 @@ function xgit_get_commit_author($commit) {
  *
  */
 function xgit_get_commit_files($commit) {
-  $lines = _xgit_load_commit($commit);
+  $lines = _xgit_load_object($commit);
 
   $items = array();
   // Walk the array backwards until no more files are found.
@@ -258,7 +258,7 @@ function _xgit_load_object($object) {
       'commit',
       'tag',
     );
-    _xgit_assert_type(array($object, $allowed_types));
+    _xgit_assert_type(array($object => $allowed_types));
 
     $command = 'git --git-dir="%s" show --name-status --pretty=short --date=iso8601 %s';
     $command = sprintf($command, $xgit['git_dir'], escapeshellarg($object));
