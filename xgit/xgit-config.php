@@ -105,7 +105,7 @@ function xgit_bootstrap() {
     exit(VERSIONCONTROL_GIT_ERROR_NO_GIT_DIR);
   }
 
-  $xgit['git_dir']         = $_ENV['PWD'];
+  $xgit['git_dir'] = $_ENV['PWD'];
 
   if (empty($xgit['repo'])) {
     $message = "Error: git repository with id '%s' does not exist.\n";
