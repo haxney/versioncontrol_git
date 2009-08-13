@@ -61,13 +61,11 @@ class GitUpdateHookTestCase extends GitTestHelper {
   }
 
   /**
-   * Test pushing to the repository, both with and without a
+   * Test a basic commit to the repository.
    */
-  public function testPushing() {
+  public function testCommit() {
     $this->initRepo();
-    $this->initHook('update');
     $this->initRepo($this->repo['wc_git_dir']);
-    $this->setRemote('origin', $this->repo['url']);
 
     $path     = $this->randomName();
     $contents = $this->randomName();
@@ -93,8 +91,16 @@ class GitUpdateHookTestCase extends GitTestHelper {
       t('Commit the initial revision.'),
       t('Shell Interaction')
     );
-    // Get the revision identifier (the first match group).
-    $rev = $matches[1];
+  }
+
+  /**
+   * Test pushing to the repository, both with and without a Drupal version
+   * control account.
+   */
+  public function testPushing() {
+    $this->initAndCommit();
+    $this->initHook('update');
+    $this->setRemote('origin', $this->repo['url']);
     list($stdout, $stderr, $retval) = $this->wcPush();
     $pattern = '@error: hooks/update exited with error code (\d+)\n'.
                'error: hook declined to update refs/heads/master\n'.

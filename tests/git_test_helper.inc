@@ -299,6 +299,20 @@ class GitTestHelper extends GitLibTestBase {
   }
 
   /**
+   * Initialize the repository and add a sample commit.
+   */
+  function initAndCommit() {
+    $this->initRepo();
+    $this->initRepo($this->repo['wc_git_dir']);
+
+    $path = $this->randomName();
+    $contents = $this->randomName();
+    $this->wcAddSampleFile($path, $contents);
+    $message = $this->randomName();
+    return $this->wcCommit($message);
+  }
+
+  /**
    * Run 'git commit' with the message given.
    *
    * @param $msg
