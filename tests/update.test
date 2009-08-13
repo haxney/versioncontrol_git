@@ -101,6 +101,27 @@ class GitUpdateHookTestCase extends GitTestHelper {
     $this->initAndCommit();
     $this->initHook('update');
     $this->setRemote('origin', $this->repo['url']);
+
+    list($stdout, $stderr, $retval) = $this->wcPush();
+    $pattern = '@error: hooks/update exited with error code (\d+)@';
+    $this->assertTrue(
+      preg_match($pattern, $stderr, $matches),
+      t('Fail pushing without GIT_DRUPAL_UID env variable set.'),
+      t('Hook initialization')
+    );
+    $error_code = (int) $matches[1];
+    $this->assertEqual(
+      $error_code,
+      VERSIONCONTROL_GIT_ERROR_NO_UID,
+      t('Return correct error code without GIT_DRUPAL_UID env variable set.'),
+      t('Hook initialization')
+    );
+
+    $user = $this->drupalCreateUser(array('administer version control systems'));
+    $this->drupalLogin($user);
+    $username = $this->randomName();
+    putenv("GIT_DRUPAL_UID=$user->uid");
+
     list($stdout, $stderr, $retval) = $this->wcPush();
     $pattern = '@error: hooks/update exited with error code (\d+)\n'.
                'error: hook declined to update refs/heads/master\n'.
@@ -123,10 +144,6 @@ class GitUpdateHookTestCase extends GitTestHelper {
       t('Refuse push when no Drupal repository exists.'),
       t('Update hook')
     );
-
-    $user = $this->drupalCreateUser(array('administer version control systems'));
-    $this->drupalLogin($user);
-    $username = $this->randomName();
 
     // Create the Drupal repository and add a user account.
     $this->initDrupalRepo($this->randomName());
