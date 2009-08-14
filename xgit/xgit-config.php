@@ -719,8 +719,7 @@ function xgit_check_commit_access($commit, $label) {
   $operation['repo_id']  = $xgit['repo_id'];
   $item_paths            = xgit_get_commit_files($commit);
   $operation['type']     = xgit_operation_type($ref);
-  $operation['username'] = xgit_get_commit_author($commit);
-  $operation['uid']      = $xgit['uid'];
+  $operation['username'] = user_load($xgit['uid'])->username;
   $operation['labels'][] = $label;
 
   // Set the $operation_items array from the item path and status.
