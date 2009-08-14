@@ -719,8 +719,18 @@ function xgit_check_commit_access($commit, $label) {
   $operation['repo_id']  = $xgit['repo_id'];
   $item_paths            = xgit_get_commit_files($commit);
   $operation['type']     = xgit_operation_type($ref);
-  $operation['username'] = user_load($xgit['uid'])->username;
   $operation['labels'][] = $label;
+
+  // Set the uid to GIT_DRUPAL_UID if that user has an account on this
+  // repository.
+  $operation['uid']      = 0;
+  $result = db_query("SELECT uid, repo_id
+                      FROM {versioncontrol_accounts}
+                      WHERE uid = %d AND repo_id = %d",
+                      $xgit['uid'], $xgit['repo_id']);
+  if (db_fetch_object($result)) {
+    $operation['uid'] = $xgit['uid'];
+  }
 
   // Set the $operation_items array from the item path and status.
   foreach ($item_paths as $path => $properties) {
