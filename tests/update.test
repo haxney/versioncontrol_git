@@ -238,7 +238,7 @@ class GitUpdateHookTestCase extends GitTestHelper {
 
       $current = array(
         'mark' => $marks[$i],
-        'from' => $marks[$i - 1],
+        'from' => ':'. $marks[$i - 1],
         'operations' => array(
           array(
             'operation' => 'filemodify',
