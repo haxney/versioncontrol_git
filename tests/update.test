@@ -159,14 +159,12 @@ class GitUpdateHookTestCase extends GitTestHelper {
     );
 
     $this->initGitAccount($user->uid, $username);
-    list($result, $ret_val) = $this->wcPush();
-    $pattern = array(
-      'To %s',
-      '* [new branch]      master -> master',
-    );
-    $pattern = sprintf(implode("\n", $pattern), $this->repo['path']);
+    list($stdout, $stderr, $retval) = $this->wcPush();
+    $pattern = '@To %s\n'.
+               ' \* \[new branch\] +master -> master@';
+    $pattern = sprintf($pattern, $this->repo['uri']);
     $this->assertTrue(
-      is_int(strpos($result, $pattern)),
+      is_int(preg_match($pattern, $stderr)),
       t('Successfully push to remote repository when user has an account.'),
       t('Update hook')
     );
