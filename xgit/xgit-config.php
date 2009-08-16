@@ -217,7 +217,7 @@ function xgit_get_commit_files($commit) {
     $items[$old_path] = array('status' => $status);
   } while($line = prev($lines));
 
-  return array_reverse($items, TRUE);
+  return $items;
 }
 
 /**
