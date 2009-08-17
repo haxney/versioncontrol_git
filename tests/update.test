@@ -276,7 +276,6 @@ class GitUpdateHookTestCase extends GitTestHelper {
       t('Update hook')
     );
     $retval = (int) $matches[1];
-    xdebug_break();
     $this->assertEqual(
       $retval,
       VERSIONCONTROL_GIT_ERROR_NO_REPOSITORY,
