@@ -225,13 +225,20 @@ class GitTestHelper extends GitLibTestBase {
   /**
    * Initialize the repository in the Drupal database.
    *
+   * @param $name
+   *   The name of the repository, or NULL for a randomly generated name.
+   *
    * @param $update_method
    *   The method to use to update the repository.
    *
    * @return
    *   The repository object.
    */
-  function initDrupalRepo($name, $update_method=VERSIONCONTROL_GIT_UPDATE_CRON) {
+  function initDrupalRepo($name=NULL, $update_method=VERSIONCONTROL_GIT_UPDATE_CRON) {
+    if (empty($name)) {
+      $name = $this->randomName();
+    }
+
     $menu_path = 'admin/project/versioncontrol-repositories/add-git';
     $this->repo['name'] = $name;
 
