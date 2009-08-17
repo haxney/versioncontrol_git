@@ -250,7 +250,6 @@ class GitUpdateHookTestCase extends GitTestHelper {
       );
       $commands[] = array_merge($commands_template, $current);
     }
-
     list($retval, $marks_out, $stdout, $stderr) = $fast->fastImport($commands);
     $this->assertCommandSuccess($retval, $group);
   }
@@ -259,17 +258,12 @@ class GitUpdateHookTestCase extends GitTestHelper {
    * Test a number of different error conditions for the hook.
    */
   function testErrors() {
-    $this->initRepo();
+    $this->initAndCommit();
     $this->initHook('update');
-    $this->initRepo($this->repo['wc_git_dir']);
+    $this->setRemote('origin', $this->repo['url']);
 
-    $path     = $this->randomName();
-    $contents = $this->randomName();
-    $result   = $this->wcAddSampleFile($path, $contents);
-    $message = $this->randomName();
-    $this->wcCommit($message);
+    list($stdout, $stderr, $retval) = $this->wcPush();
 
-    list($result, $retval) = $this->wcPush();
     $this->assertEqual(
       $retval,
       VERSIONCONTROL_GIT_ERROR_NO_REPOSITORY,
