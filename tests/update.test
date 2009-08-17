@@ -295,6 +295,9 @@ class GitUpdateHookTestCase extends GitTestHelper {
       t('Update hook')
     );
 
+    $admin = $this->drupalCreateUser(array('administer version control systems'));
+    $this->drupalLogin($admin);
+    $this->initDrupalRepo();
     $ref = 'refs/invalid/master';
     putenv(sprintf('GIT_DIR=', escapeshellarg($this->repo['path'])));
     list($stdout, $stderr, $retval) = $this->execHook('update',
