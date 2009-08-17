@@ -283,13 +283,6 @@ class GitUpdateHookTestCase extends GitTestHelper {
       t('Update hook')
     );
 
-    $pattern = "Error: git repository with id '%s' does not exist.";
-    $this->assertTrue(
-      is_int(strpos($result, sprintf($pattern, $ths->repo['repo_id']))),
-      t('Update hook returns an error when no Drupal repository has been created.'),
-      t('Update hook')
-    );
-
     list($stdout, $stderr, $retval) = $this->execHook('update',
                              'refs/invalid/master',
                              VERSIONCONTROL_GIT_EMPTY_REF,
