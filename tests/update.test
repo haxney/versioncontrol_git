@@ -315,7 +315,7 @@ class GitUpdateHookTestCase extends GitTestHelper {
 
     $error_msg = sprintf("Given reference '%s' is invalid.", $ref);
     $this->assertTrue(
-      is_int(strpos($result, $error_msg)),
+      is_int(strpos($stderr, $error_msg)),
       t('Update hook returns an error message when the reference is invalid.'),
       t('Update hook')
     );
