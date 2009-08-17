@@ -251,6 +251,9 @@ class GitTestHelper extends GitLibTestBase {
     $repo = array_shift(versioncontrol_get_repositories(array(
                 'names' => array($this->repo['name'])
               )));
+    if (empty($repo)) {
+      return NULL;
+    }
     $this->repo = array_merge($this->repo, $repo);
 
     // Append the repo id to the xgit-config file.
