@@ -1,0 +1,245 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * Test the fast-import bridge for PHP.
+ *
+ * Check a number of conditions to ensure the proper function of the
+ * GitFastImport class of gitlib.
+ *
+ * Copyright 2009 by Daniel Hackney ("dhax", http://drupal.org/user/384635)
+ */
+
+require_once(dirname(__FILE__) . '/../git.php');
+require_once(dirname(__FILE__) . '/test_helpers.inc');
+
+class GitLibFastImportTestCase extends GitLibTestBase {
+
+  public static function getInfo() {
+    return array(
+      'name' => t('Fast Import'),
+      'description' => t('Verify that Fast Import integration works correctly.'),
+      'group' => t('GitLib'),
+    );
+  }
+
+  function setUp() {
+    parent::setUp();
+    $tempfile = tempnam('','');
+    if (file_exists($tempfile)) { unlink($tempfile); }
+    mkdir($tempfile);
+    $this->repo_dir = $tempfile;
+
+    $command = sprintf('GIT_DIR=%s git init', escapeshellarg($this->repo_dir));
+    shell_exec($command);
+
+    $this->fast = new GitFastImport($this->repo_dir);
+  }
+
+  function tearDown() {
+    recursive_remove_directory($this->repo_dir);
+    parent::tearDown();
+  }
+
+  /**
+   * Test the functionality of GitFastImport::buildCommandLine().
+   */
+  public function testBuildCommandLine() {
+    $command = 'git fast-import ';
+    $expected = $command;
+    $this->assertEqual(
+      $expected,
+      $this->fast->buildCommandLine(),
+      'Correctly returns just the bare command.',
+      'buildCommandLine()'
+    );
+
+    $default_opts = '--date-format=raw --stats ';
+    $expected     = $command . $default_opts;
+    $this->assertEqual(
+      $expected,
+      $this->fast->buildCommandLine($this->fast->defaultOptions()),
+      'Correctly returns the command with default arguments.',
+      'buildCommandLine()'
+    );
+
+    $pack_size = rand();
+    $file_name = $this->randomName();
+    $opts_args = array(
+      'quiet',
+      'force',
+      'max-pack-size' => $pack_size,
+      'export-pack-edges' => $file_name,
+    );
+    $opts = '--quiet --force --max-pack-size=%s --export-pack-edges=%s ';
+    $expected = $command . $default_opts . sprintf($opts, $pack_size, $file_name);
+    $this->assertEqual(
+      $expected,
+      $this->fast->buildCommandLine(array_merge($this->fast->defaultOptions(), $opts_args)),
+      'Correctly format supplied arguments.',
+      'buildCommandLine()'
+    );
+  }
+
+  /**
+   * Test running fast-import with no input. Requires a repository, but will not
+   * produce any commits.
+   */
+  function testEmptyCommand() {
+    $group = t('Empty command');
+    list($retval, $marks, $stdout, $stderr) = $this->fast->fastImport(array(), array());
+    $this->assertCommandSuccess($retval, $group);
+    $this->assertNoMarks($marks, $group);
+    $this->assertStatisticsExists($stderr, $group);
+  }
+
+  /**
+   * Test the 'progress' command of fast-import.
+   */
+  function testProgressCommand() {
+    $group = t('progress command');
+    // Generate some messages
+    $messages[] = $this->randomName();
+    $messages[] = $this->randomName();
+    $messages[] = $this->randomName();
+    $messages[] = $this->randomName();
+
+    foreach ($messages as $message) {
+      $commands[] = array(
+        'command' => 'progress',
+        'message' => $message,
+      );
+    }
+
+    $options = array();
+    list($retval, $marks, $stdout, $stderr) = $this->fast->fastImport($commands, $options);
+
+    $this->assertCommandSuccess($retval, $group);
+    $this->assertNoMarks($marks, $group);
+
+    foreach($messages as $message) {
+      $this->assertTrue(
+        is_int(strpos($stdout, 'progress '. $message)),
+        t('Make sure assigned message appears in stdout.'),
+        $group
+      );
+    }
+  }
+
+  /**
+   * Test the 'checkpoint' command.
+   */
+  function testCheckpointCommand() {
+    $group      = t('checkpoint command');
+    $commands[] = array(
+      'command' => 'checkpoint',
+    );
+    $options = array();
+    list($retval, $marks, $stdout, $stderr) = $this->fast->fastImport($commands, $options);
+
+    $this->assertCommandSuccess($retval, $group);
+    $this->assertNoMarks($marks, $group);
+  }
+
+  /**
+   * Test the 'blob' command.
+   */
+  function testBlobCommand() {
+    $group         = t('blob command');
+    $data_marked   = $this->randomName();
+    $data_unmarked = $this->randomName();
+    $mark_id       = rand(1, GitFastImport::MARK_ID_MAX);
+    $options       = array();
+    $commands[]    = array(
+      'command' => 'blob',
+      'mark'    => $mark_id,
+      'data'    => $data_marked,
+    );
+
+    $commands[]    = array(
+      'command' => 'blob',
+      'data'    => $data_unmarked,
+    );
+    list($retval, $marks, $stdout, $stderr) = $this->fast->fastImport($commands, $options);
+
+    $this->assertCommandSuccess($retval, $group);
+    $this->assertMarkBlob($marks, $mark_id, $data_marked, $group);
+    $counts = array(
+      'created'    => 2,
+      'duplicates' => 0,
+    );
+    $this->assertObjectStats($stderr, 'blobs', $counts, $group);
+    $counts = array(
+      'unique' => 1,
+    );
+    $this->assertObjectStats($stderr, 'marks', $counts, $group);
+
+    // Test MARK_ID_MAX
+    $commands[] = array(
+      'command' => 'blob',
+      'mark'    => GitFastImport::MARK_ID_MAX + 1,
+      'data'    => $data_marked,
+    );
+
+    try {
+      list($retval, $marks, $stdout, $stderr) = $this->fast->fastImport($commands, $options);
+      $this->fail(t('Oversize mark was not rejected.'), $group);
+    } catch (Exception $e) {
+      $this->pass(t('Oversize mark rejected.'), $group);
+    }
+  }
+
+  /**
+   * Test the 'commit' command.
+   */
+  function testCommitCommand() {
+    $group    = t('commit command');
+    $options  = array();
+    $name     = $this->randomName();
+    $time     = rand(0, time());
+    $email    = sprintf('%s@%s.com', $this->randomName(), $this->randomName());
+    $message  = $this->randomName();
+    $contents = $this->randomName();
+    $path     = $this->randomName();
+    $mark     = rand(1, GitFastImport::MARK_ID_MAX);
+
+    // Create a simple sample commit.
+    $commands[] = array(
+      'command'   => 'commit',
+      'ref'       => 'master',
+      'mark'      => $mark,
+      'committer' => array(
+        'name'  => $name,
+        'email' => $email,
+        'when'  => array(
+          'time'   => $time,
+          'offutc' => '+0000',
+        ),
+      ),
+      'message'    => $message,
+      'operations' => array(
+        array(
+          'operation' => 'filemodify',
+          'mode'      => 'normal',
+          'data'      => $contents,
+          'path'      => $path,
+        ),
+      ),
+    );
+    list($retval, $marks, $stdout, $stderr) = $this->fast->fastImport($commands, $options);
+
+    $this->assertCommandSuccess($retval, $group);
+    $counts = array(
+      'created' => 1,
+      'duplicates' => 0,
+    );
+    $this->assertObjectStats($stderr, 'commits', $counts, $group);
+
+    $counts = array(
+      'unique' => 1,
+    );
+    $this->assertObjectStats($stderr, 'marks', $counts, $group);
+    $this->assertMarkCommit($marks, $mark, $commands[0], $group);
+  }
+}

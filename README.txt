@@ -1,4 +1,4 @@
-$Id: README.txt,v 1.1.4.1 2009/04/07 17:35:32 marvil07 Exp $
+$Id$
 
 Git backend for Version Control API -
 Provides Git commit information as a pluggable backend.
@@ -27,11 +27,11 @@ We need at least versioncontrol api version 6.x-1.0-rc1.
 If you've problems with the module, please check that your server is running
 git 1.6.2.2 or later. We don't check against earlier versions of git.
 
-AUTHOR
-------
-Jimmy Berry ("boombatower", http://drupal.org/user/214218) (orginal version
-for Drupal 5)
-Cornelius Riemenschneider ("CorniI", http://drupal.org/user/136353)
+AUTHORS
+-------
+Jimmy Berry ("boombatower", http://drupal.org/user/214218 ) (orginal version for Drupal 5)
+Cornelius Riemenschneider ("CorniI", http://drupal.org/user/136353 )
+Daniel Hackney ("dhax", http://drupal.org/user/384635 )
 
 ROADMAP
 ------

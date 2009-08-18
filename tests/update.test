@@ -1,0 +1,346 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * Test the xgit-update hook.
+ *
+ * Copyright 2009 by Daniel Hackney ("dhax", http://drupal.org/user/384635)
+ */
+
+require_once(drupal_get_path('module', 'versioncontrol_git') .'/tests/git_test_helper.inc');
+
+class GitUpdateHookTestCase extends GitTestHelper {
+
+  public static function getInfo() {
+    return array(
+      'name' => t('"update" hook'),
+      'description' => t('Test the functionality of the Git update hook.'),
+      'group' => t('Version Control - Git'),
+    );
+  }
+
+  /**
+   * Test the printing of usage information when incorrect number of arguments
+   * is given.
+   */
+  public function testInvalidArgHelp() {
+    $this->initRepo();
+    $this->initHook('update');
+
+    list($stdout, $stderr, $retval) = $this->execHook('update');
+    $usage_text = t('Usage: php !cli <config file> <ref> <oldrev> <newrev>',
+                  array('!cli' => $this->hooks['update']['dst']));
+
+    $this->assertTrue(
+      is_int(strpos($stderr, $usage_text)),
+      t('Print help text when too few arguments are given.'),
+      t('Shell Interaction')
+    );
+
+    $this->assertEqual(
+      $retval,
+      VERSIONCONTROL_GIT_ERROR_WRONG_ARGC,
+      t('Return error code when too few arguments are given.'),
+      t('Shell Interaction')
+    );
+
+    list($stdout, $stderr, $retval) = $this->execHook('update', 'too', 'many', 'arguments', 'for', 'the', 'hook');
+    $this->assertTrue(
+      is_int(strpos($stderr, $usage_text)),
+      t('Print help text when too many arguments are given.'),
+      t('Shell Interaction')
+    );
+
+    $this->assertEqual(
+      $retval,
+      VERSIONCONTROL_GIT_ERROR_WRONG_ARGC,
+      t('Return error code when too many arguments are given.'),
+      t('Shell Interaction')
+    );
+  }
+
+  /**
+   * Test a basic commit to the repository.
+   */
+  public function testCommit() {
+    $this->initRepo();
+    $this->initRepo($this->repo['wc_git_dir']);
+
+    $path     = $this->randomName();
+    $contents = $this->randomName();
+    $result   = $this->wcAddSampleFile($path, $contents);
+
+    $this->assertFalse(
+      $result,
+      t('Add test file to the repository (should not produce output).'),
+      t('Shell Interaction')
+    );
+
+    // Attempt to commit, but fail because the system user does not have access.
+    $message = $this->randomName();
+    $stdout = $this->wcCommit($message);
+
+    $pattern = '/Created initial commit %s: %s\n'.
+               ' +1 files changed, 1 insertions\(\+\), 0 deletions\(-\)\n'.
+               ' +create mode 100644 %s/';
+
+    $pattern = sprintf($pattern,$this->obj_regex, $message, $path);
+    $this->assertTrue(
+      preg_match($pattern, $stdout, $matches),
+      t('Commit the initial revision.'),
+      t('Shell Interaction')
+    );
+  }
+
+  /**
+   * Test pushing to the repository, both with and without a Drupal version
+   * control account.
+   */
+  public function testPushing() {
+    $this->initAndCommit();
+    $this->initHook('update');
+    $this->setRemote('origin', $this->repo['url']);
+
+    list($stdout, $stderr, $retval) = $this->wcPush();
+    $pattern = '@error: hooks/update exited with error code (\d+)@';
+    $this->assertTrue(
+      preg_match($pattern, $stderr, $matches),
+      t('Fail pushing without GIT_DRUPAL_UID env variable set.'),
+      t('Hook initialization')
+    );
+    $error_code = (int) $matches[1];
+    $this->assertEqual(
+      $error_code,
+      VERSIONCONTROL_GIT_ERROR_NO_UID,
+      t('Return correct error code without GIT_DRUPAL_UID env variable set.'),
+      t('Hook initialization')
+    );
+
+    $user = $this->drupalCreateUser(array('use version control systems'));
+    $admin = $this->drupalCreateUser(array('administer version control systems'));
+    $this->drupalLogin($admin);
+    $username = $this->randomName();
+    putenv("GIT_DRUPAL_UID=$user->uid");
+
+    list($stdout, $stderr, $retval) = $this->wcPush();
+    $pattern = '@error: hooks/update exited with error code (\d+)\n'.
+               'error: hook declined to update refs/heads/master\n'.
+               'To %s\n'.
+               ' +! \[remote rejected\] master -> master \(hook declined\)\n'.
+               "error: failed to push some refs to '%s'@";
+
+    $pattern = sprintf($pattern,
+               $this->repo['url'],
+               $this->repo['url']);
+    $this->assertTrue(
+      preg_match($pattern, $stderr, $matches),
+      t('Refuse push when no Drupal repository exists.'),
+      t('Update hook')
+    );
+    $error_code = (int) $matches[1];
+    $this->assertEqual(
+      $error_code,
+      VERSIONCONTROL_GIT_ERROR_NO_REPOSITORY,
+      t('Return correct error code when no Drupal repository exists.'),
+      t('Update hook')
+    );
+
+    // Create the Drupal repository and add a user account.
+    $this->initDrupalRepo($this->randomName());
+    list($stdout, $stderr, $retval) = $this->wcPush();
+    preg_match($pattern, $stderr, $matches);
+    $error_code = (int) $matches[1];
+    $this->assertEqual(
+      $error_code,
+      VERSIONCONTROL_GIT_ERROR_NO_ACCESS,
+      t('Refuse push when user does not have an account on the Git repository.'),
+      t('Update hook')
+    );
+
+    $this->initGitAccount($user->uid, $username);
+    list($stdout, $stderr, $retval) = $this->wcPush();
+    $pattern = '@To %s\n'.
+               ' \* \[new branch\] +master -> master@';
+    $pattern = sprintf($pattern, $this->repo['uri']);
+    $this->assertTrue(
+      is_int(preg_match($pattern, $stderr)),
+      t('Successfully push to remote repository when user has an account.'),
+      t('Update hook')
+    );
+  }
+
+  /**
+   * Test whether the correct groups of commits are selected for access
+   * checking.
+   *
+   * Uses 'git fast-import' to produce predictable revision names.
+   */
+  function testCommitGroups() {
+    $this->initRepo();
+    $this->initHook('update');
+    $this->initRepo($this->repo['wc_git_dir']);
+    $fast = new GitFastImport($this->repo['wc_path']);
+    $group     = t('groups of commits');
+    $options   = array();
+    $name      = $this->randomName();
+    $time      = rand(0, time());
+    $email     = sprintf('%s@%s.com', $this->randomName(), $this->randomName());
+    $message   = $this->randomName();
+    $data_base = $this->randomName();
+    $path      = $this->randomName();
+
+    // A template for creating commits. All commit times will be the same, but
+    // for testing, it doesn't really matter.
+    $commands_template = array(
+      'command'   => 'commit',
+      'ref'       => 'master',
+      'committer' => array(
+        'name'  => $name,
+        'email' => $email,
+        'when'  => array(
+          'time'   => $time,
+          'offutc' => '+0000',
+        ),
+      ),
+      'message'    => $message,
+      'operations' => array(
+        array(
+          'operation' => 'filemodify',
+          'mode'      => 'normal',
+          'data'      => $data_base,
+          'path'      => $path,
+        ),
+      ),
+    );
+
+    $marks[] = rand(1, GitFastImport::MARK_ID_MAX);
+    $contents[] = $this->randomName();
+    // Create a linear stream of commits, starting from the initial commit. All
+    // commits should be checked.
+    $modifications = array(
+      'mark' => $marks[0],
+      'operations' => array(
+        array(
+          'operation' => 'filemodify',
+          'mode'      => 'normal',
+          'data'      => $contents[0],
+          'path'      => $path,
+        ),
+      ),
+    );
+    $commands[] = array_merge($commands_template, $modifications);
+
+    // Create four more test commits.
+    for ($i = 1; $i <= 4; $i++) {
+      $marks[$i] = rand(1, GitFastImport::MARK_ID_MAX);
+      $contents[$i] = $this->randomName();
+
+      $current = array(
+        'mark' => $marks[$i],
+        'from' => ':'. $marks[$i - 1],
+        'operations' => array(
+          array(
+            'operation' => 'filemodify',
+            'mode'      => 'normal',
+            'data'      => $contents[$i],
+            'path'      => $path,
+          ),
+        ),
+      );
+      $commands[] = array_merge($commands_template, $current);
+    }
+    list($retval, $marks_out, $stdout, $stderr) = $fast->fastImport($commands);
+    $this->assertCommandSuccess($retval, $group);
+  }
+
+  /**
+   * Test a number of different error conditions for the hook.
+   */
+  function testErrors() {
+    $this->initAndCommit();
+    $this->initHook('update');
+    $this->setRemote('origin', $this->repo['url']);
+
+    list($stdout, $stderr, $retval) = $this->wcPush();
+
+    $pattern = '@Error: git repository with id \'-?[0-9]+\' does not exist.\n'.
+               'error: hooks/update exited with error code ([0-9]+)\n'.
+               'error: hook declined to update refs/heads/master\n'.
+               'To %s\n'.
+               ' ! \[remote rejected\] master -> master \(hook declined\)@';
+    $pattern = sprintf($pattern, $this->repo['url']);
+    $this->assertTrue(
+      is_int(preg_match($pattern, $stderr, $matches)),
+      t('Update hook returns an error when no Drupal repository has been created.'),
+      t('Update hook')
+    );
+    $retval = (int) $matches[1];
+    $this->assertEqual(
+      $retval,
+      VERSIONCONTROL_GIT_ERROR_NO_REPOSITORY,
+      t('Update hook fails when no Drupal repository has been created.'),
+      t('Update hook')
+    );
+
+    list($stdout, $stderr, $retval) = $this->execHook('update',
+                             'refs/invalid/master',
+                             VERSIONCONTROL_GIT_EMPTY_REF,
+                             VERSIONCONTROL_GIT_EMPTY_REF);
+
+    $this->assertEqual(
+      $retval,
+      VERSIONCONTROL_GIT_ERROR_NO_GIT_DIR,
+      t('Update hook returns an error when GIT_DIR is not set.'),
+      t('Update hook')
+    );
+
+    $admin = $this->drupalCreateUser(array('administer version control systems'));
+    $this->drupalLogin($admin);
+    $this->initDrupalRepo();
+    $ref = 'refs/invalid/master';
+    putenv(sprintf('GIT_DIR=', escapeshellarg($this->repo['path'])));
+    list($stdout, $stderr, $retval) = $this->execHook('update',
+                             $ref,
+                             VERSIONCONTROL_GIT_EMPTY_REF,
+                             VERSIONCONTROL_GIT_EMPTY_REF);
+
+
+    $this->assertEqual(
+      $retval,
+      VERSIONCONTROL_GIT_ERROR_INVALID_REF,
+      t('Update hook returns an error when the reference is invalid.'),
+      t('Update hook')
+    );
+
+    $error_msg = sprintf("Given reference '%s' is invalid.", $ref);
+    $this->assertTrue(
+      is_int(strpos($stderr, $error_msg)),
+      t('Update hook returns an error message when the reference is invalid.'),
+      t('Update hook')
+    );
+
+    // A random ref, unlikely to exist within the repository
+    $new_obj = 'f8fcb0d040a13fb885bc1accd950f1f459c024b7';
+    $old_obj = VERSIONCONTROL_GIT_EMPTY_REF;
+    $ref = 'refs/heads/master';
+    list($stdout, $stderr, $retval) = $this->execHook('update',
+                             $ref,
+                             $old_obj,
+                             $new_obj);
+    $this->assertEqual(
+      $retval,
+      VERSIONCONTROL_GIT_ERROR_INVALID_OBJ,
+      t('Update hook returns an error code when the object does not exist within the repository.'),
+      t('Update hook')
+    );
+
+    $error_msg = sprintf("Object '%s' is not valid in this repository", $new_obj);
+    $this->assertTrue(
+      is_int(strpos($stderr, $error_msg)),
+      t('Update hook returns an error message when the object does not exist within the repository.'),
+      t('Update hook')
+    );
+
+  }
+}
