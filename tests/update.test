@@ -337,7 +337,7 @@ class GitUpdateHookTestCase extends GitTestHelper {
 
     $error_msg = sprintf("Object '%s' is not valid in this repository", $new_obj);
     $this->assertTrue(
-      is_int(strpos($result, $error_msg)),
+      is_int(strpos($stderr, $error_msg)),
       t('Update hook returns an error message when the object does not exist within the repository.'),
       t('Update hook')
     );
