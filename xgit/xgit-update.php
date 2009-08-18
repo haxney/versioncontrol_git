@@ -73,10 +73,15 @@ function xgit_init($argc, $argv) {
       fwrite(STDERR, "Given reference '$ref' is invalid.\n\n");
       exit(VERSIONCONTROL_GIT_ERROR_INVALID_REF);
     }
-    _xgit_assert_type(array(
-        $new_obj => array('commit', 'tag', 'empty'),
-        $old_obj => array('commit', 'tag', 'empty'),
-      ));
+    try {
+      _xgit_assert_type(array(
+          $new_obj => array('commit', 'tag', 'empty'),
+          $old_obj => array('commit', 'tag', 'empty'),
+        ));
+    } catch (Exception $e) {
+      fwrite(STDERR, $e->getMessage());
+      exit(VERSIONCONTROL_GIT_ERROR_INVALID_OBJ);
+    }
 
     // Debugging help
     if ($GLOBALS['xgit_debug']) {
